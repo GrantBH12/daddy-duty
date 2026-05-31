@@ -938,7 +938,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v3.5.1 · cloud sync</span>
+      <span class="brand-meta">v3.6 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -3374,12 +3374,12 @@ function markCardRead(){
 function renderTopbar(){
   const sel=document.getElementById('topbar-streak');
   const xel=document.getElementById('topbar-xp');
-  if(sel)sel.textContent='◉ '+formatStreak(state.streak||0);
+  if(sel)sel.textContent='● '+formatStreak(state.streak||0);
   if(xel)xel.textContent='★ '+(state.xp||0)+' XP';
 }
 
 function formatStreak(n){
-  if(n===0)return'0 day streak';
+  if(n===0)return'no streak yet';
   return n+' day streak';
 }
 
@@ -3479,6 +3479,37 @@ function saveSettings(){
   closeSettings();
   showToast('Settings saved');
 }
+function getHubSubtitle(phase, hour){
+  const morning = hour < 17;
+  switch(phase){
+    case 'pre-transfer':
+      return morning
+        ? 'Every box you check now is one less thing to think about when it counts.'
+        : 'Good prep is quiet confidence. Keep building it.';
+    case 'first':
+      return morning
+        ? 'The heartbeat is real. Everything else is logistics.'
+        : `You're already doing it — showing up is the whole job right now.`;
+    case 'second':
+      return morning
+        ? 'Second trimester moves fast. The anatomy scan, the nursery, the leave paperwork.'
+        : 'More breathing room before the third-trimester sprint. Use it.';
+    case 'third':
+      return morning
+        ? 'Pack the bag. File the paperwork. The window is shorter than it feels.'
+        : `Almost there. The work you're doing now lands in a few weeks.`;
+    case 'final':
+      return morning
+        ? 'Last stretch. Bag packed, people notified, nothing left to wonder.'
+        : `You've done the work. Stay close and stay ready.`;
+    case 'post-birth':
+      return morning
+        ? `You made it. The job is different now — you're in it.`
+        : 'Every rough night ends. You are doing better than you think.';
+    default:
+      return 'One card to read, one thing to do. Everything else is here when you want it.';
+  }
+}
 function applySettings(){
   const s=state.settings||{};
   // Greeting
@@ -3489,6 +3520,8 @@ function applySettings(){
     const name=s.name||'Dad';
     greet.innerHTML=`Good ${tod}, <em>${name}.</em>`;
   }
+  const hubSub=document.querySelector('.hub-subtitle');
+  if(hubSub){hubSub.textContent=getHubSubtitle(getCurrentPhase(),new Date().getHours());}
   // Phase progress title
   const ppt=document.getElementById('phase-prog-title');
   if(ppt){const ph=PHASES.find(p=>p.id===getCurrentPhase());ppt.textContent=(ph?ph.label:'Pre-transfer')+' progress';}
@@ -3508,7 +3541,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v3.5.1'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v3.6'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
