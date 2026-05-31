@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="Daddy Duty"/>
-<link rel="manifest" href="manifest.json"/>
+<link rel="manifest" href="/manifest.json"/>
 <title>Daddy Duty</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -938,7 +938,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v3.4 · cloud sync</span>
+      <span class="brand-meta">v3.5 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1446,8 +1446,11 @@ async function loadFromCloud() {
       pushToCloud(); // No cloud data yet — push local up
       return;
     }
-    const localRaw   = localStorage.getItem(STORAGE_KEY);
-    const localTs    = localRaw ? (JSON.parse(localRaw)._savedAt || 0) : 0;
+    const localRaw    = localStorage.getItem(STORAGE_KEY);
+    const localParsed = localRaw ? JSON.parse(localRaw) : null;
+    const localTs     = (localParsed?.settings?.onboardingDone === true)
+                          ? (localParsed._savedAt || 0)
+                          : 0;
     const cloudTs    = new Date(data.updated_at).getTime();
     if (cloudTs > localTs) {
       restoreStateFromObject(data.data);
@@ -1477,6 +1480,9 @@ function restoreStateFromObject(d) {
   if (d.dailyCardLog)                        state.dailyCardLog   = d.dailyCardLog;
   if (d.hospitalBag)                         state.hospitalBag    = d.hospitalBag;
   if (d.settings)                            state.settings       = Object.assign({}, state.settings, d.settings);
+  if (state.settings.onboardingDone) {
+    document.getElementById('onboarding-modal')?.classList.remove('open');
+  }
   save();
   render();
   renderTopbar();
@@ -3501,7 +3507,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v3.4'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v3.5'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
