@@ -1,0 +1,10 @@
+{
+  "name": "Daddy Duty",
+  "short_name": "Daddy Duty",
+  "description": "Your personal guide to becoming a father",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5ede0",
+  "theme_color": "#c97156",
+  "icons": []
+}

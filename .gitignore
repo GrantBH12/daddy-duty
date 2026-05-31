@@ -7,3 +7,11 @@ token.json
 __pycache__/
 *.pyc
 .DS_Store
+# HTML source files contain baked-in Supabase credentials — never commit
+daddy-duty-v*.html
+daddy-duty-card-reference.html
+daddy-duty-task-reference.html
+# Old deploy folder (replaced by docs/)
+dist/
+# Local Netlify config
+.netlify

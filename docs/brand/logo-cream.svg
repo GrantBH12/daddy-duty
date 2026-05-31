@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none">
+  <title>Daddy Duty — primary mark, cream on ink</title>
+  <defs>
+    <mask id="dd-knot-mask-cream">
+      <rect width="140" height="100" fill="white"></rect>
+      <circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle>
+    </mask>
+  </defs>
+  <circle cx="55" cy="50" r="32" stroke="#f5ede0" stroke-width="6"></circle>
+  <circle cx="92" cy="50" r="22" stroke="#c5cfb8" stroke-width="6" mask="url(#dd-knot-mask-cream)"></circle>
+  <path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#c5cfb8" stroke-width="6"></path>
+</svg>
