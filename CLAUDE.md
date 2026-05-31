@@ -350,12 +350,26 @@ IDs: `a-001`–`a-042` (preparing), `b-001`–`b-029` (first+second), `f-001`–
 
 Tracks: `Bonding | Legal | Medical | Emotional | Surrogacy | Self | Logistics`
 
-### Card counts (v2.20 — 110 total)
-- preparing: 42 (a-001 to a-042)
-- first: 20 (b-001 to b-015, f-001 to f-005)
-- second: 17 (b-016 to b-029 minus b-020/b-023, s-001 to s-005)
-- third: 14 (b-030, t-001 to t-013)
-- newborn: 17 (n-001 to n-017)
+### Card counts (v3.6 — 163 total)
+- preparing: 42 (a-001 to a-042) — next: a-043
+- first: 31 — next: audit with `grep "phase:'first'" source | tail`
+- second: 36 — next: audit with grep
+- third: 37 (includes b-030, t-001 to t-013 + additional) — next: t-014
+- newborn: 17 (n-001 to n-017) — next: n-018
+
+**Always grep the live source for last IDs — don't trust this file's counts.**
+
+### 365-card goal
+Target: one card per day for a full year of the journey. All cards should be track-agnostic (no `track:'Surrogacy'` filter) unless the content is GC-specific, so the full pool is available on all family paths.
+
+Target distribution:
+- preparing: 60 (18 more)
+- first: 75 (44 more)
+- second: 80 (44 more)
+- third: 75 (38 more)
+- newborn: 75 (58 more — biggest gap)
+
+Write new cards to `daddy-duty-card-reference.html` first (with sourcing metadata), then copy title/body into app `LIBRARY_CARDS`.
 
 `daddy-duty-card-reference.html` is the authoritative source for card content with sourcing metadata. When adding cards, write them to the reference first, then copy title/body into the app's `LIBRARY_CARDS`.
 
