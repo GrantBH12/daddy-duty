@@ -236,6 +236,14 @@
   .nudge.settings-nudge { background:var(--cream-deep); color:var(--ink-soft); }
   .nudge.settings-nudge .nudge-icon { background:var(--ink-muted); color:var(--cream); font-style:normal; font-size:13px; }
   .nudge-arrow { margin-left:auto; font-size:16px; flex-shrink:0; opacity:.5; }
+  .daily-question { max-width:720px; margin:0 auto 32px; background:var(--cream-deep); border-radius:18px; padding:24px 28px; }
+  .q-label { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-muted); margin-bottom:10px; }
+  .q-text { font-family:'Fraunces',serif; font-size:19px; color:var(--ink); margin-bottom:18px; line-height:1.4; }
+  .q-options { display:flex; flex-direction:column; gap:8px; }
+  .q-option-btn { text-align:left; background:var(--cream); border:1.5px solid transparent; border-radius:10px; padding:11px 16px; font-size:14px; color:var(--ink); cursor:pointer; transition:all .15s; line-height:1.45; font-family:inherit; }
+  .q-option-btn:hover { border-color:var(--sage); background:var(--sage-soft); }
+  .q-option-btn.skip-btn { color:var(--ink-muted); font-size:13px; background:transparent; border:none; padding:6px 4px; }
+  .q-option-btn.skip-btn:hover { color:var(--ink); background:transparent; }
 
   /* library module tile badge */
   .mod-badge { display:inline-flex; align-items:center; justify-content:center; width:8px; height:8px; border-radius:50%; background:var(--terracotta); margin-left:6px; flex-shrink:0; position:relative; top:-1px; }
@@ -938,7 +946,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v3.9.2 · cloud sync</span>
+      <span class="brand-meta">v3.9.3 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -993,6 +1001,7 @@
     </div>
 
     <div id="home-nudge-wrap"></div>
+    <div id="home-question-wrap"></div>
     <div class="hub-sectionhead"><h2>Your toolkit</h2></div>
     <div class="orbit">
       <div class="module" data-mod="todo" onclick="go('todo')">
@@ -1720,13 +1729,15 @@ let state = {
   budgetCustomItems:[], budgetAddingGroup:null, shopping:{},
   journal:[],
   xp:0, streak:0, lastCheckinDate:'', readCardIds:[], dailyCardLog:{}, hospitalBag:null,
+  completedMilestones:[], mutedTracks:[], mutedSensitivity:[], questionLog:{},
   settings:{
     name:'', partnerName:'', babyNickname:'',
     familyPath:'gestational-surrogacy',
     dueDateStr:'2027-05-10',
     currentPhase:'pre-transfer',
     gcName:'',
-    transferDateStr:''
+    transferDateStr:'',
+    gcDistance:null, priorLoss:null, isFirstTimeParent:null
   },
   snapshots:[]
 };
@@ -1737,7 +1748,7 @@ function deleteItem(type,id){const b=BUCKET[type];if(!b)return;const idx=(state.
 
 function seedIfEmpty(){
   const raw=localStorage.getItem(STORAGE_KEY);
-  if(raw){try{const p=JSON.parse(raw);if(p.tasks&&p.tasks.length>0){state.tasks=p.tasks;state.myStuff=p.myStuff||{links:[],contacts:[],documents:[]};['links','contacts','documents'].forEach(k=>{if(!state.myStuff[k])state.myStuff[k]=[];});state.tasks.forEach(t=>{if(!t.attachments)t.attachments=[];if(t.dueDate===undefined)t.dueDate='';});state.thisWeek=new Set(p.thisWeek||[]);state.budget=p.budget||{};state.shopping=p.shopping||{};state.budgetCustomItems=p.budgetCustomItems||[];state.journal=p.journal||[];state.xp=p.xp||0;state.streak=p.streak||0;state.lastCheckinDate=p.lastCheckinDate||'';state.readCardIds=p.readCardIds||[];state.dailyCardLog=p.dailyCardLog||{};state.hospitalBag=p.hospitalBag||initHospitalBag();state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',gcName:'',transferDateStr:''},p.settings||{});initBudgetState();return;}}catch{}}
+  if(raw){try{const p=JSON.parse(raw);if(p.tasks&&p.tasks.length>0){state.tasks=p.tasks;state.myStuff=p.myStuff||{links:[],contacts:[],documents:[]};['links','contacts','documents'].forEach(k=>{if(!state.myStuff[k])state.myStuff[k]=[];});state.tasks.forEach(t=>{if(!t.attachments)t.attachments=[];if(t.dueDate===undefined)t.dueDate='';});state.thisWeek=new Set(p.thisWeek||[]);state.budget=p.budget||{};state.shopping=p.shopping||{};state.budgetCustomItems=p.budgetCustomItems||[];state.journal=p.journal||[];state.xp=p.xp||0;state.streak=p.streak||0;state.lastCheckinDate=p.lastCheckinDate||'';state.readCardIds=p.readCardIds||[];state.dailyCardLog=p.dailyCardLog||{};state.hospitalBag=p.hospitalBag||initHospitalBag();state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',gcName:'',transferDateStr:'',gcDistance:null,priorLoss:null,isFirstTimeParent:null},p.settings||{});state.completedMilestones=p.completedMilestones||[];state.mutedTracks=p.mutedTracks||[];state.mutedSensitivity=p.mutedSensitivity||[];state.questionLog=p.questionLog||{};initBudgetState();return;}}catch{}}
   const legacyRaw=localStorage.getItem(LEGACY_KEY_V22);
   if(legacyRaw){try{const legacy=JSON.parse(legacyRaw);if(legacy.tasks&&legacy.tasks.length>0){state.tasks=legacy.tasks.map(t=>({...t,attachments:[]}));legacy.tasks.forEach((lt,ti)=>{(lt.attachments||[]).forEach(a=>{if(!a||!a.type)return;if(a.type==='file'){a.type='document';a.label=a.name||a.label||'Untitled';a.url=a.url||'';}if(a.type==='link'){const item=createItem('link',{label:a.label||'Untitled link',url:a.url||''});state.tasks[ti].attachments.push({type:'link',id:item.id});}else if(a.type==='document'){const item=createItem('document',{label:a.label||'Untitled document',url:a.url||''});state.tasks[ti].attachments.push({type:'document',id:item.id});}else if(a.type==='contact'){const item=createItem('contact',{name:a.name||'Untitled',role:a.role||'',phone:a.phone||'',email:a.email||'',note:a.note||''});state.tasks[ti].attachments.push({type:'contact',id:item.id});}});});state.phaseCollapsed=legacy.phaseCollapsed?new Set(legacy.phaseCollapsed):new Set(PHASES.map(p=>p.id).filter(id=>id!==getCurrentPhase()));save();return;}}catch{}}
   state.tasks=SEED_TASKS.map(t=>({id:uid(),title:t.title,notes:'',cat:t.cat,tags:t.tags.slice(),phase:t.phase,pinned:false,status:'open',steps:[],attachments:[],dueDate:'',createdBy:'seed'}));
@@ -1752,7 +1763,7 @@ function seedIfEmpty(){
 }
 
 function save(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},_savedAt:Date.now()};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),completedMilestones:state.completedMilestones||[],mutedTracks:state.mutedTracks||[],mutedSensitivity:state.mutedSensitivity||[],questionLog:state.questionLog||{},settings:state.settings||{},_savedAt:Date.now()};
   try{localStorage.setItem(STORAGE_KEY,JSON.stringify(snap));}catch{}
   debouncedCloudSave();
 }
@@ -2754,538 +2765,926 @@ function resolveTokens(title){
 
 
 /* ── LIBRARY CARDS DATA + ENGINE (v2.15 phase-pool architecture) ── */
+const MILESTONE_TAGS = ['pediatrician','daycare','car-seat','nursery','pre-birth-order',
+  'insurance','leave-paperwork','hospital-tour','infant-cpr','birth-plan',
+  'cord-blood','doc-folder','wills','announcements'];
+
 const LIBRARY_CARDS = [
   // ── PREPARING (pre-transfer) — 37 cards ──
   {id:'a-001',phase:'preparing',weekRange:null,track:'Bonding',
+   tags:[],
    title:`The bond starts before the baby arrives`,
    body:`Research on intended fathers shows that emotional attachment to an unborn child begins during pregnancy — not at birth. Studies of fathers in surrogacy arrangements specifically find that those who stay engaged with the pregnancy (attending appointments, maintaining regular contact with their GC, reading to or talking about the baby) report stronger early bonding once the baby arrives. The groundwork you lay right now, during the waiting and preparing, is bonding infrastructure. This journal, these cards, this daily habit — it all counts.`},
   {id:'a-002',phase:'preparing',weekRange:null,track:'Surrogacy',
+   tags:[],
    title:`What gestational surrogacy actually means — medically`,
    body:`In gestational surrogacy, the baby has no genetic connection to the gestational carrier. An embryo created from your genetic material (and potentially your partner's or a donor's) is transferred to the GC's uterus. This is distinct from traditional surrogacy, where the carrier also provides the egg. Understanding this clearly matters for conversations with family who might not know, for legal documents, and for how you talk about the journey with your child someday. Your GC is the person who carries and grows the baby — not the biological mother.`},
   {id:'a-003',phase:'preparing',weekRange:null,track:'Legal',
+   tags:['pre-birth-order'],
    title:`Why the pre-birth order matters more than people realize`,
    body:`A pre-birth order (PBO) is a court order issued before birth that establishes you as the legal parent(s) on the birth certificate — without requiring adoption. Without one, you may need to adopt your own child after birth, which adds months of waiting and significant expense. PBO availability varies by state: some states are PBO-friendly, others are not. Your surrogacy attorney should already be planning for this. If you haven't had an explicit conversation about your state's process, have it now — the timing of filing matters and is typically tied to gestational weeks.`},
   {id:'a-004',phase:'preparing',weekRange:null,track:'Emotional',
+   tags:[],
    title:`The waiting is the hardest part — and that's normal`,
    body:`Intended fathers in surrogacy consistently report the pre-transfer period as one of the most emotionally taxing. You're preparing intensely for something you have limited control over. That tension — full engagement, uncertain outcome — is genuinely hard. Psychologists who work with fertility patients use the term "anticipatory grief" to describe what can happen even before a loss occurs, simply from the fear of potential loss. Acknowledging that the waiting is hard, rather than pushing through it stoically, is the healthier path. You're allowed to feel the weight of this.`},
   {id:'a-005',phase:'preparing',weekRange:null,track:'Medical',
+   tags:[],
    title:`What happens during the embryo transfer`,
    body:`The transfer itself is a short, outpatient procedure — typically 15–30 minutes. A catheter is used to place the embryo into the GC's uterus under ultrasound guidance. No anesthesia is required, though some clinics offer mild sedation. Most GCs describe it as similar to a pap smear in terms of discomfort. Afterward, there's typically a brief rest period before she goes home. You may or may not be present — that's your GC's call, and worth discussing in advance. The two-week wait for a pregnancy test result begins that day.`},
   {id:'a-006',phase:'preparing',weekRange:null,track:'Self',
+   tags:[],
    title:`Build your support system before you need it`,
    body:`One of the most common things intended fathers report in hindsight: they didn't build a support network during the pre-transfer phase, and when hard moments came — a failed transfer, a scare during pregnancy — they had nowhere to take it. Consider: who knows what you're going through? Who can you call at 11pm? Is there a therapist on standby? RESOLVE (the National Infertility Association) maintains a peer support network specifically for those in fertility journeys. Many surrogacy agencies also offer counseling access. Identify your people now, while things are calm.`},
   {id:'a-007',phase:'preparing',weekRange:null,track:'Surrogacy',
+   tags:[],
    title:`Understanding your GC's medical protocol`,
    body:`Before transfer, your GC undergoes a preparation protocol — typically involving synthetic estrogen to thicken the uterine lining, followed by progesterone to prepare for implantation. This protocol lasts several weeks and involves multiple monitoring appointments. Your GC will be taking medications, attending regular clinic visits, and managing her own schedule around all of this. Understanding what she's going through — without being intrusive — helps you be a better partner in the process. Ask your agency coordinator what the typical protocol looks like so you're not surprised.`},
   {id:'a-008',phase:'preparing',weekRange:null,track:'Legal',
+   tags:['pre-birth-order'],
    title:`What to know about your Gestational Carrier Agreement`,
    body:`Your GCA is the legal contract that governs the relationship between you and your GC — covering everything from compensation and expenses to decision-making during pregnancy to what happens in various medical scenarios. It should be drafted by an attorney who specializes in reproductive law, and your GC should have independent legal representation. Key things to understand: the GCA is not the same as parental rights documentation (that's the PBO), it should explicitly address selective reduction and termination scenarios, and it should align with the laws of the state where your GC resides. Read it fully. Ask questions.`},
   {id:'a-009',phase:'preparing',weekRange:null,track:'Bonding',
+   tags:[],
    title:`Talk to your baby before they exist — it's not silly`,
    body:`Some intended fathers feel awkward connecting emotionally before transfer — the baby is still embryonic, the future uncertain. But narrative research on fatherhood shows that fathers who begin "talking to" or "writing to" a future child during the anticipation phase report smoother bonding after birth. It activates your imagination of who this person will be. That's not wishful thinking; it's practice for the relationship. Your journal is a good place for this. A letter that starts "I don't know you yet, but here's what I'm thinking about you right now" is a perfectly valid place to begin.`},
   {id:'a-010',phase:'preparing',weekRange:null,track:'Emotional',
+   tags:['announcements'],
    title:`What to tell family and friends — and when`,
    body:`There's no single right answer, but there are common mistakes. Telling everyone before transfer means you'll field questions and well-meaning check-ins during the two-week wait — which most intended parents describe as exhausting. Waiting until after the first trimester is a common strategy, but it means carrying the secret through what may be your most anxious period. The people worth telling early are those who will actually support you — not those who are merely curious. Think about who you'd want to know if something went wrong, because those are the people worth telling before it does.`},
   {id:'a-011',phase:'preparing',weekRange:null,track:'Medical',
+   tags:['anxiety-content'],
    title:`Success rates: what the numbers actually mean`,
    body:`Embryo transfer success rates are often cited as 40–60% per transfer for fresh embryos, somewhat lower for frozen — though clinic-specific rates, embryo quality, and the GC's history all matter. Critically: these numbers represent clinical pregnancy rates (a heartbeat detected), not live birth rates. Live birth rates are slightly lower. And "per transfer" means each individual attempt — cumulative success over multiple attempts is considerably higher for those who persist. The statistics can feel daunting. The more grounding framing: you're not in a statistic, you're in a process. Each step forward is information.`},
   {id:'a-012',phase:'preparing',weekRange:null,track:'Surrogacy',
+   tags:[],
    title:`The GC relationship: what the research says makes it work`,
    body:`Studies of long-term intended parent/GC relationships identify three factors that most consistently predict positive outcomes: clear communication agreements (who contacts whom, how often, how), aligned expectations about the birth experience, and explicit conversations about the relationship after delivery. The relationships that go sideways most often do so because of unspoken assumptions — about how close the relationship will be, about how much the IP will be involved in appointments, about future contact with the child. If you haven't had the "what does this relationship look like after birth?" conversation, schedule it now.`},
   {id:'a-013',phase:'preparing',weekRange:null,track:'Self',
+   tags:[],
    title:`Protect your work life during this journey`,
    body:`Surrogacy journeys frequently involve unexpected time-off demands: clinic visits, agency calls, legal appointments, and — if a transfer fails — significant emotional processing. Many intended fathers navigate this without telling their employers anything, which means every appointment is a half-day PTO and every hard day is quietly absorbed. Consider: does your employer have a fertility benefits policy? Are you eligible for any paid leave when the baby arrives (FMLA doesn't cover surrogacy automatically in all states)? Talk to your HR department now — you don't have to share details, just understand your options.`},
   {id:'a-014',phase:'preparing',weekRange:null,track:'Bonding',
+   tags:[],
    title:`Your name: the first gift you give`,
    body:`Naming a child is one of the earliest acts of parenthood — and for intended fathers, it often arrives earlier than expected, because the baby's name feels like a way to make them real during a time of uncertainty. Research on naming practices across cultures consistently shows that names carry identity, aspiration, and connection to lineage. Whether you choose a family name, a meaningful word, or something that simply sounds right — take it seriously, take it joyfully, and if you have a partner, take it together. What does the name need to say?`},
   {id:'a-015',phase:'preparing',weekRange:null,track:'Legal',
+   tags:['insurance'],
    title:`Health insurance and the newborn: sort this out before transfer`,
    body:`One of the most urgent and underappreciated to-dos: confirm that your health insurance will cover your baby from the moment of birth. Insurance companies have strict enrollment windows (often 30 days post-birth) and specific documentation requirements for surrogacy-born children — some require the PBO, others the birth certificate, others an agency letter. Call your insurance provider now, explain your situation, and ask explicitly what documentation they need. If you're changing jobs or your coverage is employer-provided, flag this with HR. A newborn without insurance is not a problem you want to solve from a hospital waiting room.`},
   {id:'a-016',phase:'preparing',weekRange:null,track:'Emotional',
+   tags:['anxiety-content','loss-adjacent'],
    title:`Failed transfer: what to do before it happens`,
    body:`Roughly half of all transfers don't result in a continuing pregnancy. That means there's a meaningful chance you'll go through this experience — and yet most intended parents don't prepare for it. Preparing doesn't mean being pessimistic. It means knowing: who will you call? What will you tell people who know? How long will you wait before trying again? What does your protocol look like for a second attempt? Clinics and agencies should have grief support resources — ask for them before you need them. Couples who discuss failure scenarios ahead of time consistently report navigating them better when they occur.`},
   {id:'a-017',phase:'preparing',weekRange:null,track:'Medical',
+   tags:['anxiety-content'],
    title:`Embryo grading: what the letters and numbers mean`,
    body:`When your embryos are biopsied and graded, you'll receive designations like "5AA" or "3BB." The number indicates the blastocyst development stage (1–6, with 6 being most expanded). The first letter grades the inner cell mass (what becomes the baby) from A (excellent) to C (poor). The second letter grades the trophectoderm (what becomes the placenta) on the same scale. A 5AA embryo is ideal, but 4AB, 4BA, and even lower grades produce healthy babies regularly. Grades are correlations, not verdicts. Ask your RE what grades your transferring embryos carry and what that means for your specific case.`},
   {id:'a-018',phase:'preparing',weekRange:null,track:'Surrogacy',
+   tags:[],
    title:`Escrow accounts: how surrogacy finances actually work`,
    body:`In most U.S. surrogacy arrangements, compensation flows through an independent escrow account managed by a third-party trust company — not paid directly to the GC. The escrow company distributes funds according to the schedule in your GCA: base compensation milestones, expense reimbursements (mileage, maternity clothing, lost wages), and any agreed allowances. This protects all parties. You'll fund the escrow account in advance — typically the full base compensation plus a buffer — and the balance returns to you if the arrangement ends early. Understand your escrow structure completely before signing anything.`},
   {id:'a-019',phase:'preparing',weekRange:null,track:'Self',
+   tags:[],
    title:`What to read — a short, honest list`,
    body:`The "intended father" reading list is thin. Most pregnancy and baby books assume the reader is pregnant. But a few are genuinely useful: "The Expectant Father" by Armin Brott covers the pregnancy experience from the partner's POV in a practical, non-condescending way. For surrogacy specifically, your agency may have a resource library — ask. And for the emotional weight of the journey: any solid book on attachment theory (like "Attached" by Levine and Heller) will help you understand what you're building toward.`},
   {id:'a-020',phase:'preparing',weekRange:null,track:'Bonding',
+   tags:[],
    title:`Oxytocin is not just a mother's hormone`,
    body:`The popular narrative paints oxytocin — the "bonding hormone" — as primarily maternal. The research tells a different story. Fathers show measurable oxytocin surges in response to infant contact, infant vocalization, and even just thinking about their newborn. Intended fathers who do skin-to-skin contact in the first hours of life show hormonal responses comparable to biological fathers in traditional pregnancies. The hormone system is there and it's active; it just needs the right triggers. What you do in the delivery room and the first days home isn't just routine caregiving — it's neurobiologically meaningful.`},
   {id:'a-021',phase:'preparing',weekRange:null,track:'Legal',
+   tags:['wills'],
    title:`Estate planning before your child arrives`,
    body:`Having a child changes your estate planning needs fundamentally. At minimum, before the baby arrives: update your will to name a guardian if both you and your partner were incapacitated, review your life insurance beneficiaries, and consider whether a trust is appropriate (particularly important if you want to control how assets are distributed to a minor). If you don't have a will, this is the single most important legal document you can create before becoming a parent. An estate attorney with family law experience can handle all of this in one or two sessions. Don't put it off.`},
   {id:'a-022',phase:'preparing',weekRange:null,track:'Emotional',
+   tags:['loss-adjacent'],
    title:`Letting go of the pregnancy experience you won't have`,
    body:`Intended parents via surrogacy often describe a quiet grief around the aspects of pregnancy they're not part of — the feeling of kicks, the shared experience of a growing belly, the physical presence that makes the pregnancy feel real. This grief is legitimate and doesn't require comparison to anyone else's experience. A useful reframe that many intended fathers find helpful: your job isn't to experience the pregnancy. Your job is to show up for the person who is experiencing it, and to be ready when the baby arrives. These are different jobs. Neither is lesser.`},
   {id:'a-023',phase:'preparing',weekRange:null,track:'Surrogacy',
+   tags:[],
    title:`What your GC wants you to know (but might not say)`,
    body:`Interviews with gestational carriers consistently surface a handful of things they wish intended parents understood better: they want to be treated as capable adults managing their own bodies, not patients to be monitored. They appreciate genuine interest in their life beyond the pregnancy. They find it meaningful when IPs send notes on milestones and acknowledge holidays. They notice when IPs disappear between appointments. And they almost universally report that the most important thing is feeling like the IPs trust them. Trust is built in the small moments between the big ones. Show up for those.`},
   {id:'a-024',phase:'preparing',weekRange:null,track:'Self',
+   tags:[],
    title:`Sleep: front-load it now`,
    body:`The newborn sleep deprivation research is extensive and grim. Cognitive function, emotional regulation, decision-making — all meaningfully impaired after sustained sleep loss, which begins in the first weeks with an infant. What's less discussed: the window before the baby arrives is actually an opportunity. Addressing chronic sleep debt now — not just maintaining baseline — means starting from a better position. This isn't merely practical advice; sleep quality is one of the strongest predictors of early parental mental health. If you have sleep issues (apnea, insomnia), treat them before the baby arrives. Future you will thank current you.`},
   {id:'a-025',phase:'preparing',weekRange:null,track:'Medical',
+   tags:[],
    title:`Your monitoring clinic vs. your GC's OB — two different relationships`,
    body:`During the pre-transfer and early pregnancy phase, two clinical relationships run in parallel: the reproductive endocrinologist (RE) and monitoring clinic who oversee the IVF and transfer process, and your GC's OB who will manage the pregnancy once she's discharged from the RE. These aren't the same relationship. The RE works primarily with you as the intended parents — it's your embryo, your protocol. The OB's patient is your GC. Understanding this distinction early prevents confusion about who to contact, who gets test results, and whose decisions are whose. Ask your agency coordinator to walk you through how communication flows between these two practices at your specific clinic.`},
   {id:'a-026',phase:'preparing',weekRange:null,track:'Emotional',
+   tags:[],
    title:`On becoming a father through a different door`,
    body:`There's a version of fatherhood most people picture: a partner's growing belly, a hand on a round stomach, a moment in a delivery room. That's not your version. Yours involves a different kind of waiting, a different kind of witnessing, a different set of people in the room. Research on fathers via surrogacy consistently shows that the path doesn't diminish the outcome — the attachment, the love, the identity shift of becoming a parent are all fully present. But the journey there is different, and pretending it isn't creates a quiet loneliness. Name your version of this story. It's yours. It's real. It doesn't need to look like anyone else's.`},
   {id:'a-027',phase:'preparing',weekRange:null,track:'Logistics',
+   tags:['hospital-tour'],
    title:`The hospital walk-through you should do before birth`,
    body:`Most intended parents don't visit the delivery hospital until labor begins. That's a mistake. A pre-birth walkthrough — ideally in the second trimester — lets you map out parking, find the labor and delivery floor, understand the check-in process, and introduce yourself to the charge nurse or patient relations coordinator. For surrogacy births specifically, hospitals vary enormously in how well-prepared they are for intended parents. Some have clear protocols; others have none. A visit in advance lets you surface confusion early and work with your agency to address it before you're navigating it in real time under stress.`},
   {id:'a-028',phase:'preparing',weekRange:null,track:'Self',
+   tags:[],
    title:`The mental load of surrogacy — it's more than people admit`,
    body:`Intended fathers in surrogacy carry a specific kind of cognitive load that's rarely discussed: tracking medical timelines, coordinating with agencies and attorneys, managing escrow, maintaining the GC relationship, preparing for a birth you'll witness but won't control — all while working, living, and often keeping the entire situation private. Research on caregiver mental load consistently shows that unacknowledged load leads to burnout and resentment. The solution isn't to do less — it's to make the load visible. Tell someone. Write it down. Share it with your partner. The mental weight of this journey is real and it deserves to be named.`},
   {id:'a-029',phase:'preparing',weekRange:null,track:'Surrogacy',
+   tags:['anxiety-content','loss-adjacent'],
    title:`How agencies handle a failed transfer — what to expect`,
    body:`If your first transfer doesn't result in a pregnancy, your agency should have a clear protocol: a debrief call with your coordinator, guidance from your RE on next steps, and a timeline for the next attempt. What often surprises intended parents is how quickly the clinical machinery restarts — and how alone the emotional processing can feel alongside that. Your GC will also be processing her own experience of the failed attempt. The relationship you've built before transfer pays dividends here: GCs who feel genuinely connected to their intended parents are more likely to feel motivated to try again. Check your GCA for language about what happens in the case of multiple failed attempts.`},
   {id:'a-030',phase:'preparing',weekRange:null,track:'Legal',
+   tags:[],
    title:`529 accounts and college savings: start earlier than you think`,
    body:`A 529 education savings account is a tax-advantaged investment account specifically for education expenses. Contributions grow tax-free when used for qualifying education costs. The compounding math is compelling: money invested at birth has 18 years to grow before college. Every year you delay is a year of compounding lost. Many states also offer a state income tax deduction on contributions. You don't need to wait until birth — some states allow 529s to be opened for an unborn child or a future beneficiary. Talk to a financial advisor about the right 529 plan for your state and investment horizon. This is one of the highest-ROI financial decisions new parents can make.`},
   {id:'a-031',phase:'preparing',weekRange:null,track:'Bonding',
+   tags:[],
    title:`The dad voice: why it matters before birth`,
    body:`By approximately 16 weeks gestation, a fetus begins responding to sound. By 25-28 weeks, auditory memory is forming — fetuses show measurable preference for sounds they heard repeatedly in utero. Your voice, heard regularly during pregnancy, becomes familiar before birth. For intended fathers, this creates an opportunity that requires a bit of intentionality: you need to be in proximity or create recordings. Some IPs send weekly voice memos to their GC for her to play. Others make a point of speaking directly during visits. The content matters less than the consistency. A consistent voice creates a consistent presence. That presence carries into the delivery room and the first days at home.`},
   {id:'a-032',phase:'preparing',weekRange:null,track:'Medical',
+   tags:['anxiety-content'],
    title:`Preimplantation genetic testing: what PGT-A actually screens for`,
    body:`PGT-A (preimplantation genetic testing for aneuploidies) screens embryos for chromosomal abnormalities — extra or missing chromosomes — before transfer. It identifies embryos that are euploid (chromosomally normal) vs. aneuploid (abnormal). Transferring a euploid embryo substantially reduces miscarriage risk and improves implantation rates per transfer compared to untested embryos, though it also reduces the number of embryos available for transfer. PGT-A is not a guarantee — euploid embryos can still fail to implant or miscarry. And some aneuploid embryos self-correct. The decision to test is worth a dedicated conversation with your RE, including the specific lab your clinic uses and what their euploid transfer success rates look like.`},
   {id:'a-033',phase:'preparing',weekRange:null,track:'Emotional',
+   tags:['loss-adjacent'],
    title:`Grief and hope are not opposites in this journey`,
    body:`Intended parents who've gone through fertility challenges before arriving at surrogacy often carry accumulated grief — failed cycles, diagnoses, losses. That grief doesn't disappear when you match with a GC and begin preparing for transfer. It coexists with the hope. Fertility counselors who work specifically with IVF and surrogacy patients describe this as "layered hope" — wanting something deeply while also having been hurt deeply before. If you notice that you're having trouble feeling excited, or that you're emotionally flat when you expect to feel something, that's not unusual. It may be protection. Naming it — to yourself, to your partner, or to a counselor — is the first step toward letting the hope have more room.`},
   {id:'a-034',phase:'preparing',weekRange:null,track:'Logistics',
+   tags:[],
    title:`Build your birth-day communication plan now`,
    body:`When labor begins, you will have maybe 20 minutes of clear thinking before adrenaline takes over. That's not the time to figure out who to call, in what order, and what to say. Build the plan now: who gets notified when labor starts, who finds out after delivery, who you're calling from the hospital. For surrogacy births, add a layer: who is your GC notifying, and is that consistent with what you've agreed? What happens if labor starts at 2am? What if you're traveling? The birth-day plan is a document you write in a calm moment so you don't have to make decisions in a loud one. It takes 30 minutes to write. It's worth every minute.`},
   {id:'a-035',phase:'preparing',weekRange:null,track:'Self',
+   tags:[],
    title:`Sleep debt before the newborn: the research on pre-loading rest`,
    body:`A 2023 study in Sleep Medicine Reviews found that strategic sleep extension in the weeks before a known period of sleep deprivation meaningfully improved cognitive performance and emotional regulation during that period. For new parents, this suggests a real payoff to prioritizing sleep aggressively in the final weeks of pregnancy — not just maintaining it, but extending it. Average 8+ hours per night for 2-4 weeks before your due date if possible. The effect isn't dramatic, but it's real: you'll start the newborn phase with a better baseline than if you arrived already carrying debt. This is one of the few evidence-supported things you can do for yourself before the baby arrives.`},
   {id:'a-036',phase:'preparing',weekRange:null,track:'Surrogacy',
+   tags:[],
    title:`What to send your GC — a practical guide`,
    body:`Gestational carriers consistently report that small, thoughtful gestures from intended parents matter more than grand ones. What works: a care package at the start of the medication protocol (comfort items, snacks, a personal note), a check-in message after significant appointments, a birthday acknowledgment, holiday cards, a gift for her children when the baby arrives. What to avoid: overly frequent contact that feels like monitoring, gifts that feel transactional, or disappearing between milestones. The best frame: think of it the way you'd think of maintaining any meaningful relationship — consistent, genuine, not performative. Your agency may have a gift policy to be aware of; check the GCA.`},
   {id:'a-037',phase:'preparing',weekRange:null,track:'Legal',
+   tags:['wills'],
    title:`Life insurance as a new parent: what coverage you actually need`,
    body:`Financial planners broadly recommend term life insurance coverage of 10-12 times your annual income if you have dependents. Before the baby arrives, if you don't have coverage or your coverage is insufficient, address it. Life insurance is substantially cheaper to obtain when you're healthy — waiting until after a health event makes it more expensive or unavailable. Employer-provided life insurance typically covers 1-2x salary, which is inadequate for a family. A 20-year level term policy purchased in your 30s can cost as little as $30-50/month for meaningful coverage. Get this squared away before the birth. Your baby needs you financially present even in your absence.`},
 
   // ── FIRST TRIMESTER — 15 cards ──
   {id:'b-001',phase:'first',weekRange:null,track:'Medical',
+   tags:[],
    title:`Transfer day: what's actually happening right now`,
    body:`The embryo has been placed. For the next 10–12 days, the blastocyst is attempting to implant in the uterine lining — shedding its protective shell (hatching), invading the endometrium, and beginning to establish a blood supply. This process is entirely invisible. There is nothing either of you can do to influence it. The progesterone and estrogen your GC is taking create the hormonal environment that supports implantation, but beyond that, biology takes over. What you can do: be present for your GC without adding pressure to the outcome. The two-week wait is its own kind of work.`},
   {id:'b-002',phase:'first',weekRange:null,track:'Emotional',
+   tags:[],
    title:`The two-week wait: a survival guide`,
    body:`The two-week wait (2WW) is widely recognized in fertility communities as one of the most psychologically difficult phases of any assisted reproduction journey. For intended fathers in surrogacy, it carries an additional layer: you're waiting on news that another person will receive first. Structure your days. Minimize symptom-Googling (GC symptoms during the 2WW are unreliable indicators). Have a plan for both outcomes — what will you do the evening you get the news, either way? The couples who navigate the 2WW best are the ones who keep moving: work, exercise, social connection, something that requires your attention.`},
   {id:'b-003',phase:'first',weekRange:null,track:'Surrogacy',
+   tags:[],
    title:`How to support your GC right now`,
    body:`The days immediately after transfer are medically uneventful for your GC but emotionally loaded. She knows the stakes. She's on medication that can cause bloating, mood shifts, and fatigue. She's being asked to rest without overdoing it. The most effective thing you can do is let her know you're thinking of her without adding pressure. A simple message — "thinking of you, no need to reply" — lands better than check-in questions that implicitly ask for reassurance. Send flowers. Drop off something small. Don't make her manage your anxiety on top of her own.`},
   {id:'b-004',phase:'first',weekRange:[3,6],track:'Medical',
+   tags:['anxiety-content'],
    title:`Beta hCG: what the number means`,
    body:`The first pregnancy test after IVF is a blood test measuring beta-human chorionic gonadotropin (hCG) — the hormone produced by an implanting embryo. A positive result isn't just "positive" — the clinic will report an actual number. What matters: numbers above 100 mIU/mL at 14 days past transfer are generally considered strong. But a single number is less informative than the trend — a second test 48 hours later should show the number roughly doubling, which indicates a developing pregnancy. A slow rise can indicate issues; a fast rise with very high numbers can occasionally indicate multiples. Ask your RE to explain the specific numbers in your case.`},
   {id:'b-005',phase:'first',weekRange:null,track:'Emotional',
+   tags:[],
    title:`Positive test: allow yourself to feel it`,
    body:`Intended parents in surrogacy often describe muting their response to a positive test — protecting themselves from hope, worried about what comes next. This caution is understandable and self-protective. But there's a cost: if you never let yourself feel the good news, you miss the experience of it. The heartbeat scan is still weeks away. The first trimester isn't over. But right now, today, something real happened — an embryo implanted and is growing. You can hold both things: the caution and the joy. One doesn't cancel the other. Let yourself feel this.`},
   {id:'b-006',phase:'first',weekRange:[5,8],track:'Medical',
+   tags:[],
    title:`The first ultrasound: what to look for`,
    body:`Around 6–7 weeks, the first ultrasound will look for a gestational sac, yolk sac, and — the milestone that most changes the statistics — a fetal heartbeat. A heartbeat detected at 6 weeks puts the ongoing pregnancy rate above 90%. Before that point, the numbers are less definitive. The heartbeat rate at this stage is typically 90–110 beats per minute, increasing to 120–160 bpm over the following weeks. Your GC will have this appointment at the monitoring clinic, and you may or may not be invited to attend or join remotely. Ask your agency how this is typically handled.`},
   {id:'b-007',phase:'first',weekRange:null,track:'Surrogacy',
+   tags:[],
    title:`Clinic discharge: the handoff moment`,
    body:`Around 8–10 weeks, assuming normal development, the reproductive endocrinologist (RE) who oversaw the transfer will discharge your GC to her OB. This is a significant milestone — it means the embryo has progressed to a point where it's now the OB's patient, not the fertility clinic's. For many intended parents, this moment marks the transition from "IVF patient" to "pregnant." Your agency will coordinate the transition. Make sure you've confirmed which OB your GC will be seeing and that your team has all relevant records transferred. The relationship with the OB matters for the rest of the pregnancy.`},
   {id:'b-008',phase:'first',weekRange:null,track:'Bonding',
+   tags:[],
    title:`Start talking to the baby now`,
    body:`By week 8, the embryo has a beating heart. By week 12, it has fingers. By week 16, it can hear. The research on prenatal auditory learning — babies recognizing voices heard in utero — is robust. Your GC hears your voice whenever you're in the same room. But you can also make recordings for her to play. This isn't magical thinking; it's establishing the earliest possible acoustic familiarity. Some intended fathers feel awkward about this. Do it anyway. A 60-second voice memo sent to your GC with a "you don't have to play this, but here it is" note is a small thing that carries forward.`},
   {id:'b-009',phase:'first',weekRange:[9,13],track:'Medical',
+   tags:['anxiety-content'],
    title:`First trimester screening: what you're testing for`,
    body:`Between weeks 10–13, your GC will likely undergo first trimester screening — a combination of blood tests (PAPP-A, free beta-hCG) and an ultrasound measuring nuchal translucency (the fluid at the back of the fetal neck). Together, these screen for chromosomal conditions including Down syndrome (trisomy 21), trisomy 18, and trisomy 13. These are screening tests, not diagnostic — they give probability estimates, not definitive answers. Many intended parents also pursue NIPT (non-invasive prenatal testing), a cell-free DNA blood test that can detect chromosomal conditions with greater accuracy. Discuss the full screening menu with your GC's OB.`},
   {id:'b-010',phase:'first',weekRange:null,track:'Emotional',
+   tags:[],
    title:`The first trimester's emotional truth`,
    body:`The first trimester is statistically the highest-risk phase of pregnancy, which means it's also the phase when most intended parents keep the secret, manage their anxiety privately, and don't have a support network who knows what's happening. That combination — high stakes, low support — is psychologically brutal. Name this to yourself and to your partner. The isolation isn't weakness; it's the rational outcome of the circumstances. And it means you need to be more intentional about checking in with each other. The first trimester is endured together or it's endured alone. Make a point of enduring it together.`},
   {id:'b-011',phase:'first',weekRange:[11,13],track:'Legal',
+   tags:['pre-birth-order'],
    title:`The pre-birth order: timing and what to expect`,
    body:`In PBO-friendly states, your attorney will typically file the petition around weeks 12–18 — far enough into the pregnancy to demonstrate viability, early enough to get a court date before birth. The process involves submitting your GCA, confirming genetic parentage (for genetic parents), and appearing before a judge (sometimes virtually). The resulting order directs the hospital to list you as the legal parents on the birth certificate at birth. In some states, the process requires a court appearance; in others it's administrative. Your reproductive attorney should be driving this timeline — but verify that it's on their calendar.`},
   {id:'b-012',phase:'first',weekRange:null,track:'Surrogacy',
+   tags:[],
    title:`The OB relationship — your role as an intended parent`,
    body:`Your GC's OB sees their patient as the GC — which is medically correct, since she's the one being examined. As an intended parent, your role in OB appointments is as an interested party, not a decision-maker. How much you're included depends on your GC's preferences and the OB's practice. Discuss this directly with your GC: does she want you at appointments? Would she prefer you join remotely? Is there information she'd like you to receive directly? Good OBs who work with surrogacy arrangements are experienced at navigating these conversations. If the OB seems unfamiliar with surrogacy dynamics, that's worth noting.`},
   {id:'b-013',phase:'first',weekRange:null,track:'Self',
+   tags:['first-time-parent'],
    title:`What actually helps fathers bond with a newborn`,
    body:`The research on paternal bonding identifies five practices with the strongest evidence base: skin-to-skin contact in the first hours; being the primary caregiver for specific tasks (not helping, owning); consistent voice exposure (the baby already knows your voice); responsive caregiving (picking up, soothing — fast response builds security); and play. That last one — play — is where fathers excel by evolutionary design. Rough-and-tumble play activates different neurological circuits than nurturing care, and fathers are typically better at it than they realize. You don't have to be perfect. You have to be present and engaged.`},
   {id:'b-014',phase:'first',weekRange:[11,13],track:'Medical',
+   tags:['loss-adjacent'],
    title:`Week 12: the milestone that changes the math`,
    body:`Completing the first trimester — typically defined as reaching week 12 — is a meaningful milestone in any pregnancy, but particularly so in surrogacy arrangements where the emotional investment has been high for months longer. After week 12, the miscarriage risk drops substantially: from roughly 15–20% to under 3%. This is when most couples begin telling people. It's when the pregnancy starts to feel more real — not because it wasn't real before, but because the odds have shifted decisively in its favor. Allow yourself to exhale a little. You've made it to a different place.`},
   {id:'b-015',phase:'first',weekRange:null,track:'Bonding',
+   tags:['nursery'],
    title:`Start the nursery now — earlier than you think`,
    body:`First-time fathers frequently underestimate how much the nursery matters to their own bonding process. Setting up a crib, choosing a color, assembling furniture — these are concrete acts of preparation that make the baby feel real in a way that ultrasound images often don't. There's also a practical argument: the third trimester arrives faster than expected, and the final weeks are consumed by logistics and emotions that leave little room for furniture assembly. If you start the nursery in the first trimester, you can refine it slowly and joyfully rather than rush it anxiously. Begin.`},
 
   // ── SECOND TRIMESTER — 12 cards ──
   {id:'b-016',phase:'second',weekRange:[17,21],track:'Medical',
+   tags:['anxiety-content'],
    title:`The anatomy scan: what you're actually looking at`,
    body:`Around 18-20 weeks, the anatomy scan (also called the mid-pregnancy ultrasound or level 2 ultrasound) examines fetal anatomy in detail: brain, heart, spine, kidneys, limbs, and facial features. It typically takes 30-60 minutes. The sonographer measures growth and checks for structural anomalies. Most anatomy scans are reassuring — about 97% show normal development. When something is flagged, it's often a "soft marker" that warrants follow-up but not immediate alarm. You may or may not be present; discuss with your GC in advance. If your GC's OB allows it, ask to receive a copy of the report directly — you have a right to this information as the legal/intended parent.`},
   {id:'b-017',phase:'second',weekRange:null,track:'Surrogacy',
+   tags:[],
    title:`Second trimester: the steadier stretch`,
    body:`For most pregnancies, the second trimester (weeks 13-26) is the most physically comfortable phase for the GC. Morning sickness typically fades. Energy returns. The pregnancy becomes visibly apparent. For intended parents, this phase often brings a shift from acute anxiety to something closer to normal anticipation. It's also the period when many intended parents go public with the news. If you haven't told family or friends yet, this is often the practical window — before the third trimester logistics consume your attention. Use the relative calm of the second trimester intentionally: visit your GC, attend an appointment if invited, start the nursery, have the conversations you've been deferring.`},
   {id:'b-018',phase:'second',weekRange:[13,17],track:'Legal',
+   tags:['insurance'],
    title:`Confirm your health insurance will cover your newborn from day one`,
    body:`This is one of the most time-sensitive and underappreciated to-dos of the pregnancy: contact your health insurance provider now and ask explicitly what documentation they need to add a newborn born via gestational surrogacy to your plan. Requirements vary significantly by insurer: some require the pre-birth order, others require the birth certificate, others require a letter from your surrogacy agency. Most plans have a 30-day enrollment window from birth — miss it and you may need to wait for open enrollment. Do this call in the second trimester, document who you spoke to, and get the requirements in writing. Your agency coordinator should have handled this before, and can guide you.`},
   {id:'b-019',phase:'second',weekRange:[15,24],track:'Bonding',
+   tags:[],
    title:`Quickening: the moment the pregnancy becomes undeniable`,
    body:`Around weeks 16-25, your GC will begin feeling fetal movement — first flutters, then distinct kicks. This milestone, historically called "quickening," is often described by intended mothers as one of the most emotionally significant moments of the pregnancy — and one of the most complicated for intended fathers who can't feel it directly. Some IPs place their hands on the GC's belly during visits; this is always at her invitation, not an assumption. What you can do: ask your GC to describe the movements, ask if she'll send a video when a particularly strong one happens, and let yourself feel the significance of the news even from a distance. The baby is moving. That's real.`},
   {id:'b-021',phase:'second',weekRange:[23,27],track:'Medical',
+   tags:['anxiety-content'],
    title:`Gestational diabetes: what it means and what to watch for`,
    body:`Between weeks 24-28, most pregnant people are screened for gestational diabetes (GD) via a glucose challenge test. GD affects approximately 6-9% of pregnancies and is more common with certain risk factors (BMI, family history, age). If your GC is diagnosed with GD, it's manageable — typically through diet modification, blood sugar monitoring, and sometimes insulin — but it does increase monitoring frequency and adds a layer of complexity to the pregnancy. Babies of GD mothers have a higher risk of being large for gestational age (macrosomic), which can affect delivery planning. Your GC's OB will manage this; your role is to stay informed and be supportive. Ask your agency coordinator how GD diagnoses are typically communicated to intended parents.`},
   {id:'b-022',phase:'second',weekRange:null,track:'Logistics',
+   tags:['daycare'],
    title:`Childcare: the waitlist problem is worse than you think`,
    body:`Quality infant daycare centers in most US metro areas operate with waitlists of 6-18 months. If you haven't already placed your child on waitlists, do it now — mid-second trimester is already behind for some markets. You can always decline a spot when it comes up; you can't conjure one that doesn't exist. The practical approach: research the top 5-8 centers near your home or workplace, visit each one (most offer tours during pregnancy), and join every waitlist that meets your criteria. Also research nanny agencies and au pair programs as parallel tracks — the infant care market is tight everywhere. Don't rely on a single option.`},
   {id:'b-024',phase:'second',weekRange:[13,18],track:'Medical',
+   tags:['anxiety-content'],
    title:`NIPT results: how to read them clearly`,
    body:`Non-invasive prenatal testing (NIPT) analyzes cell-free fetal DNA in the GC's blood to screen for chromosomal conditions. It's highly sensitive for trisomies 21, 18, and 13 (Down syndrome, Edwards syndrome, Patau syndrome), with detection rates above 99% for trisomy 21. Critically: NIPT is a screening test, not diagnostic. A positive result means elevated risk — it requires confirmation via amniocentesis or CVS before any conclusions are drawn. False positives occur, particularly for rarer conditions. A negative NIPT is highly reassuring but not a guarantee. If you receive a positive or inconclusive result, ask your GC's OB to refer you to a maternal-fetal medicine specialist (MFM) before making any decisions.`},
   {id:'b-025',phase:'second',weekRange:[15,22],track:'Legal',
+   tags:['pre-birth-order'],
    title:`Filing the pre-birth order: a timeline check`,
    body:`If you're in a PBO-friendly state, your attorney should be filing the petition by weeks 16-24 of pregnancy — early enough to receive the order well before birth. A pre-birth order is typically issued 2-6 weeks after filing. If you haven't had an explicit conversation with your attorney about the filing timeline, have it today. Ask: when will you file, what documents do you need from me, will there be a court hearing, and when should I expect the order in hand? Also ask what happens if the order is delayed — what's the hospital protocol in that scenario? The PBO is the document that determines your experience in the delivery room. Don't let it be an afterthought.`},
   {id:'b-026',phase:'second',weekRange:null,track:'Bonding',
+   tags:[],
    title:`What the second trimester is like for your GC — and why it matters`,
    body:`For most gestational carriers, the second trimester brings physical relief after first-trimester symptoms, but also increasing visibility — the pregnancy becomes apparent to coworkers, friends, and strangers. GCs often report that the most common question they receive is some version of "are you keeping it?" Navigating that question repeatedly takes emotional energy. Meanwhile, she's also attending frequent OB appointments, monitoring the pregnancy, and maintaining her own family life. Understanding what your GC is experiencing — even at a general level — makes you a better partner in the process. A simple message acknowledging what she's managing, sent without expectation of a reply, goes a long way.`},
   {id:'b-027',phase:'second',weekRange:null,track:'Self',
+   tags:['has-partner'],
    title:`Your relationship with your partner during pregnancy: protect it deliberately`,
    body:`Research on couples navigating surrogacy and fertility treatment consistently identifies the pregnancy period — not just the newborn phase — as a relationship stress point. The reasons are familiar: divergent emotional processing, unequal information access, financial strain, different levels of anxiety. For intended fathers, a common pattern is absorbing stress quietly while their partner does the same. The result is two people managing privately rather than together. Deliberate investment in the relationship during pregnancy — date nights, explicit check-ins, therapy if useful — pays dividends during the harder newborn phase. You are building the co-parenting partnership right now, not just waiting for the baby to arrive.`},
   {id:'b-028',phase:'second',weekRange:[26,27],track:'Logistics',
+   tags:[],
    title:`The go-bag: pack it at 34 weeks, not 38`,
    body:`Hospital bag advice consistently says pack early — most first-time parents pack too late and under pressure. For surrogacy births, you're packing two or three bags: yours (what you need for an extended hospital stay), your partner's if they're attending, and the baby's first items. Also essential and often forgotten: a separate folder of documents — your pre-birth order, copies of both parents' IDs, the GCA summary, your pediatrician's contact, and your insurance information. Your GC will have her own documents folder; confirm with your agency what she'll carry versus what you should bring. Pack at 34 weeks. Recheck at 36. Done.`},
   {id:'b-029',phase:'second',weekRange:[26,27],track:'Medical',
+   tags:[],
    title:`Third trimester incoming: what changes after week 28`,
    body:`Week 28 marks the beginning of the third trimester and a shift in pregnancy management. Prenatal appointments move from monthly to every two weeks. Around week 32, they become weekly. The monitoring increases because the third trimester carries specific risks: preterm labor, preeclampsia, growth restriction, and late-pregnancy complications. For intended parents, this phase typically involves more communication with your GC and agency as appointments accelerate. Your GC may begin to feel physically uncomfortable — sleep disruption, back pain, and general heaviness are common. This is a meaningful time to increase your level of contact and care. The finish line is visible; the final stretch is real work.`},
 
   // ── THIRD TRIMESTER — 9 cards ──
   {id:'b-030',phase:'third',weekRange:[38,41],track:'Emotional',
+   tags:[],
    title:`The due date is a guess — and that's okay`,
    body:`Only about 4% of babies arrive on their actual due date. Most births occur within two weeks before or after. This statistical reality is worth internalizing before week 39, because the anxiety ramp-up in the final weeks is real — and often directed at a date that is functionally arbitrary. What is useful: know the signs of labor your GC has been told to watch for, have your hospital bag packed, have your travel plan ready if you're not local. What is not useful: treating the due date as a deadline against which everything is measured. The baby will arrive when they arrive. Your job is to be ready and present — not to control the timing.`},
   {id:'t-001',phase:'third',weekRange:[35,37],track:'Medical',
+   tags:['anxiety-content'],
    title:`Group B strep screening: what it is and what happens next`,
    body:`Between weeks 35 and 37, your GC will be swabbed for Group B Streptococcus (GBS) — a bacterium carried by roughly 25% of pregnant women without symptoms. GBS is harmless to adults but can cause serious infection in newborns during birth. If your GC tests positive, she'll receive IV antibiotics during labor — a straightforward protocol that dramatically reduces the transmission risk. Your newborn will be monitored for 48 hours after birth regardless of GBS status, which is standard. A positive GBS result is common, manageable, and does not indicate anything is wrong with the pregnancy. Ask your GC's OB to explain the monitoring protocol for your specific birth plan.`},
   {id:'t-002',phase:'third',weekRange:[32,37],track:'Surrogacy',
+   tags:['birth-plan'],
    title:`The surrogacy birth plan: what you control and what you don't`,
    body:`A birth plan documents your GC's preferences for labor and delivery — pain management, who's in the room, interventions she does or doesn't want. As intended parents, you have separate interests: your presence in the room, skin-to-skin contact immediately after birth, who cuts the cord. In a healthy surrogacy relationship, these are discussed openly and documented. The key distinction: medical decisions during labor are your GC's — her body, her choices. Preferences about your involvement in the first moments after birth are negotiated in advance, typically with agency support. If you haven't had the birth plan conversation with your GC explicitly, have it now. Ambiguity in a delivery room at 3am is not where you want to work it out.`},
   {id:'t-003',phase:'third',weekRange:[28,34],track:'Medical',
+   tags:['cord-blood'],
    title:`Cord blood banking: the decision and the deadline`,
    body:`At birth, blood remaining in the umbilical cord contains stem cells that can treat certain cancers and blood disorders, with growing potential applications. You have two options: donate to a public bank (free, anonymous, your child may not have access), or store privately (typically $1,500–3,000 upfront plus annual storage fees, you retain access). The American Academy of Pediatrics supports public donation for most families. Private banking is most clearly recommended if your family has a known history of conditions treatable with stem cells. The hard deadline: you must arrange this before labor. Coordinate with your GC and her OB — the collection kit needs to be at the hospital when she delivers.`},
   {id:'t-004',phase:'third',weekRange:[36,41],track:'Logistics',
+   tags:[],
    title:`The hospital arrival plan: decide before labor starts`,
    body:`When your GC calls to say she's in labor, you will have roughly 20 minutes of clear thinking before adrenaline takes over. Build the plan now: how far are you from the hospital? What's your fastest route at 2am vs. 2pm? Is there a flight involved? Who is your backup contact if you're unreachable? What's the protocol if she delivers before you arrive? For surrogacy births specifically: confirm with your GC exactly when she'll call you, what her threshold for "this is happening" looks like, and whether her OB has been briefed on your desire to be present. Discuss what happens if there's a rapid labor progression. A plan that covers the contingencies is significantly less stressful than improvising them.`},
   {id:'t-005',phase:'third',weekRange:[35,40],track:'Bonding',
+   tags:['birth-plan'],
    title:`Skin-to-skin at a surrogate birth: how to make it happen`,
    body:`The evidence for skin-to-skin contact in the first hour of life is strong: it regulates the newborn's temperature and blood sugar, supports the first feeding if applicable, and triggers the hormonal bonding cascade in both parent and child. At a surrogate birth, skin-to-skin with the intended parent is possible and increasingly standard — but it requires advance coordination. Talk to your GC's OB and the hospital's labor and delivery staff before birth. Put it in the birth plan. Confirm the hospital is familiar with surrogacy births. In most cases, as long as mom and baby are healthy, the first hour can be yours. Don't assume it will happen automatically — arrange it.`},
   {id:'t-006',phase:'third',weekRange:[28,36],track:'Medical',
+   tags:['anxiety-content'],
    title:`Preeclampsia: what to know and what to watch for`,
    body:`Preeclampsia is a pregnancy complication characterized by high blood pressure and organ involvement — most commonly detected in the third trimester. It affects roughly 5-8% of pregnancies and is one of the conditions that increased monitoring after week 28 is designed to catch early. Signs your GC's OB will watch for: sustained elevated blood pressure, protein in the urine, significant swelling (particularly face and hands), severe headaches, and upper abdominal pain. In severe cases, delivery is the treatment, even if early. As an intended parent, you don't manage this medically — your GC's OB does. What you can do: know the signs so you can support your GC in taking symptoms seriously, and maintain an open line of communication with your agency if anything is flagged.`},
   {id:'t-007',phase:'third',weekRange:[32,40],track:'Medical',
+   tags:['anxiety-content'],
    title:`C-section likelihood — and what it means for you at delivery`,
    body:`Roughly one in three births in the United States is by cesarean section. The rate is higher in certain situations: breech position, multiple gestation, prior C-section, fetal distress, or placenta previa. If your GC has a planned or emergency C-section, the delivery experience differs significantly: an operating room rather than a labor room, a larger medical team, limited space for observers, and a faster transition from birth to recovery. Ask your GC's OB in advance what the hospital's policy is on intended parent presence during a C-section. In many hospitals, one support person is permitted in the OR — confirm that can be you. Skin-to-skin in the OR is possible in many cases; ask explicitly.`},
   {id:'t-008',phase:'third',weekRange:[34,39],track:'Logistics',
+   tags:['doc-folder'],
    title:`The IP documents folder: what to bring to the hospital`,
    body:`At a surrogacy birth, you are not the patient — which means the hospital's default systems may not recognize you as having a right to be there or to receive information. The documents folder you bring changes that. Include: a certified copy of your pre-birth order (not a photocopy — a certified copy with a court seal), copies of both intended parents' government-issued IDs, a letter from your surrogacy agency explaining the arrangement, your pediatrician's name and contact, and your health insurance information for the baby. Keep these in a dedicated folder you can hand to the charge nurse immediately. Your agency should have helped you prepare this — if they haven't, ask. The documents folder is what turns a "who are you?" into a smooth handoff.`},
 
   // ── NEWBORN — 7 cards ──
   {id:'n-001',phase:'newborn',weekRange:null,track:'Bonding',
+   tags:[],
    title:`The first hour: what to expect and what to do`,
    body:`The first hour after birth is sometimes called the "golden hour" — a window of heightened neurological sensitivity in the newborn when skin-to-skin contact, warmth, and familiar voices have their strongest early bonding effect. For intended parents at a surrogacy birth, this hour requires advance coordination (see: birth plan), but when it goes well, it is exactly what the research describes. Your baby will be alert in a way that diminishes over the following hours. Hold them. Talk to them — they know your voice. The APGAR scores happen at 1 and 5 minutes; your presence during those assessments is typically possible. Don't spend the first hour behind glass if you can help it.`},
   {id:'n-002',phase:'newborn',weekRange:null,track:'Legal',
+   tags:['pre-birth-order'],
    title:`The birth certificate: how the PBO makes it work`,
    body:`If your pre-birth order is in hand, the hospital's patient registration team will process the birth certificate listing you as the legal parents — without your GC's name appearing. This is the PBO doing exactly what it was designed to do. The process: present your certified PBO to hospital registration staff, confirm they understand how to process it, and follow up on the certificate timeline (typically 2-4 weeks). If there's any hesitation or confusion from hospital staff, your agency coordinator should be your first call — they've navigated this before. In states without PBO-friendly law, a post-birth order or adoption may be required; your reproductive attorney should have briefed you on the specific pathway for your state.`},
   {id:'n-003',phase:'newborn',weekRange:null,track:'Medical',
+   tags:[],
    title:`Newborn feeding: the decision and the options`,
    body:`How you feed your baby is one of the first major parenting decisions, and for IP families it comes with additional complexity. Options: formula (the default if no other arrangements are made); donor breast milk from a milk bank (screened and pasteurized, recommended by the AAP when breastfeeding isn't possible); induced lactation (if a lactating parent has prepared with a protocol like the Newman-Goldfarb — requires months of preparation before birth); or a combination. If induced lactation was part of your plan, that conversation should have started months ago. If you're formula-feeding, identify the brand in advance and have enough at home for the first week. The baby will eat approximately every 2-3 hours. You will sort this out. It takes a few days to get the rhythm.`},
   {id:'n-004',phase:'newborn',weekRange:null,track:'Medical',
+   tags:[],
    title:`Safe sleep: the AAP guidelines and why they exist`,
    body:`The American Academy of Pediatrics safe sleep guidelines exist because Sudden Infant Death Syndrome (SIDS) and sleep-related infant deaths are real and preventable. The guidance is straightforward: place the baby on their back, on a firm flat surface, in their own sleep space, without soft bedding, bumpers, or positioners, and without bed-sharing. The "back to sleep" campaign alone reduced SIDS deaths by more than 50% after its introduction. There is no evidence that crib bumpers, sleep positioners, or inclined sleepers improve safety — the evidence runs the other direction. The guidelines feel extreme until you understand the mechanism of risk. Follow them. The sleep deprivation of those first weeks will make the shortcuts feel tempting. Don't take them.`},
   {id:'n-005',phase:'newborn',weekRange:null,track:'Medical',
+   tags:['pediatrician'],
    title:`When to call the pediatrician — the actual threshold`,
    body:`New parents systematically under- and over-call the pediatrician, often in the same week. Clear reasons to call immediately: fever above 100.4°F (38°C) in the first two months — no exceptions; fewer than 6 wet diapers per day after day 4; jaundice spreading to the torso or legs; not feeding for more than 4 hours; unusual or inconsolable crying; breathing that seems labored; color changes (pale, blue, grey). Reasons that can wait for regular office hours: mild congestion, normal newborn skin variation, minor feeding questions, hiccups (normal), grunting during sleep (also normal). Your pediatrician's practice should give you an after-hours nurse line. Know the number before you need it. Good pediatricians expect calls from new parents — that's what the number is for.`},
   {id:'n-006',phase:'newborn',weekRange:null,track:'Bonding',
+   tags:['first-time-parent'],
    title:`The fourth trimester: what your baby's first twelve weeks actually look like`,
    body:`The concept of the "fourth trimester" — coined by pediatrician Harvey Karp — describes the first three months of a newborn's life as a continuation of gestation outside the womb. Human babies are born neurologically earlier than other primates, making them unusually dependent. What this looks like in practice: your baby wants to be held nearly constantly, startles at loud sounds, is calmed by motion and white noise, and has no capacity to self-soothe. This is not a personality trait or a parenting failure — it's biology. The practical takeaway: you cannot spoil a newborn. Responding to crying builds security, not dependence. The fourth trimester ends around three months, when babies develop longer wake windows and more predictable rhythms. Survive it together.`},
   {id:'n-007',phase:'newborn',weekRange:null,track:'Surrogacy',
+   tags:[],
    title:`Your GC after the birth — the relationship transition`,
    body:`The weeks after birth are a significant transition for gestational carriers. Physiologically, they experience the same hormonal shifts as any postpartum person — including a sudden drop in pregnancy hormones that can cause mood instability, regardless of how uncomplicated the birth was. For many GCs, there's also a complex emotional recalibration: they've carried a baby they knew wasn't theirs, and now that chapter is closing. Research on GC postpartum experience consistently finds that the quality of the IP relationship is the strongest predictor of GC wellbeing after delivery. A simple note expressing gratitude, a check-in at one week and again at four weeks, and a longer acknowledgment at the six-week mark — when her postpartum care wraps up — costs you almost nothing and means a great deal. Don't disappear.`},
 
   // ── PREPARING — 5 new cards (a-038 to a-042) ──
   {id:'a-038',phase:'preparing',weekRange:null,track:'Logistics',
+   tags:[],
    title:`Donor disclosure: talking to your child about their origins`,
    body:`Research on donor-conceived people consistently shows that those who learn about their origins early — in age-appropriate language, from a young age — have better identity integration and family trust than those who find out late or by accident. The American Society for Reproductive Medicine ethics committee formally recommends disclosure. The "when you were born, we needed a special kind of help" framework works for toddlers; the story becomes more detailed as they grow. What doesn't work: waiting until they're teenagers, or hoping they never ask. Many donor-conceived people now discover their origins via consumer DNA tests regardless of what parents tell them. Getting ahead of that, on your timeline and in your words, is the gift.`},
   {id:'a-039',phase:'preparing',weekRange:null,track:'Self',
+   tags:['leave-paperwork'],
    title:`Paternity leave: the research on taking more than you planned`,
    body:`Fathers who take two or more weeks of paternity leave report significantly stronger early bonding with their infant, greater long-term involvement in childcare, and higher relationship satisfaction at 12 months compared to fathers who take less than two weeks. A Swedish study tracking fathers across 15 years of parental leave data found that extended leave produced measurable differences in caregiving brain circuitry — the neural networks for caregiving are activated and strengthened by sustained hands-on care. Your employer's paid leave policy is a starting point, not a ceiling. US FMLA guarantees 12 weeks unpaid. Many employers offer paid leave if you ask specifically. Negotiate for more than you think you need — then use it all.`},
   {id:'a-040',phase:'preparing',weekRange:null,track:'Legal',
+   tags:['anxiety-content'],
    title:`The real total cost of surrogacy: plan for the full number`,
    body:`The median total cost for gestational surrogacy in the United States is $130,000 to $170,000. Most intended parents underestimate their final costs by 20–30%. A realistic breakdown: agency fee ($20–40k), GC base compensation ($35–65k), legal and pre-birth order ($10–18k), IVF and medical protocols ($15–35k), escrow management ($5–10k), health insurance for the pregnancy ($15–25k), miscellaneous expenses — mileage, maternity clothing allowance, lost wages ($5–15k). Build your budget using the high end of each range, then add a 20% contingency buffer on top. Intended parents who budget conservatively and hit complications face impossible decisions under stress. Build the real number into your financial plan now.`},
   {id:'a-041',phase:'preparing',weekRange:null,track:'Surrogacy',
+   tags:['announcements'],
    title:`Social media and your journey: your child's story, their consent`,
    body:`What you post online about your conception story, surrogacy journey, and child's origins becomes a permanent part of the digital record — before your child can consent to any of it. Donor-conceived adults increasingly report learning about their origins through DNA testing services, social media, or overheard conversations before their parents intended to tell them. Child development researchers and donor-conceived advocacy groups broadly recommend: share the story on a timeline your child controls, not your own. This doesn't mean hiding your journey — it means being intentional about what details live permanently on the internet. The private vs. public distinction is worth deciding now, before the newborn photos begin.`},
   {id:'a-042',phase:'preparing',weekRange:null,track:'Emotional',
+   tags:['first-time-parent'],
    title:`Becoming a father: the identity shift the research actually describes`,
    body:`"Matrescence" — the identity transformation of becoming a mother — has received increasing attention from researchers. Its counterpart for fathers, "patrescence" (formally documented by Daniel Singley in 2015), is less known but equally real. Brain imaging studies of new fathers show increased activity in social cognition and emotional processing circuits after sustained caregiving. The transformation takes 12–24 months on average to integrate — not three months. Common experiences: a temporary loss of previous identity anchors (work role, social rhythm, how you spent your time), disorientation in your relationship, and a profound shift in what matters to you. This is not dysfunction. It is a becoming. Give yourself time for it to settle.`},
 
   // ── FIRST TRIMESTER — 5 new cards (f-001 to f-005) ──
   {id:'f-001',phase:'first',weekRange:null,track:'Medical',
+   tags:[],
    title:`What your GC is experiencing in the first trimester`,
    body:`Between 70 and 80 percent of pregnant people experience nausea in the first trimester; roughly half experience vomiting. Peak symptoms occur between weeks 8 and 10. "Morning sickness" is a misnomer — nausea strikes at any hour and is often triggered by specific smells or movements. Your GC is also on an external hormone protocol (estrogen and progesterone injections or suppositories) that compounds the fatigue and physical load. Understanding the biology of what she's managing — without requiring her to explain it — makes you a better partner in the process. A practical gesture: ask what foods are tolerable right now and what would help. The answer is usually something small and specific.`},
   {id:'f-002',phase:'first',weekRange:null,track:'Medical',
+   tags:['anxiety-content'],
    title:`Genetic counseling: what it covers and who benefits`,
    body:`The American College of Obstetricians and Gynecologists recommends offering genetic counseling to all patients before or during pregnancy, regardless of age. For IVF and surrogacy specifically, a genetic counselor can help you understand: what expanded carrier screening was done before retrieval (modern panels check 200+ recessive conditions), what your PGT-A results mean in probability terms, and what the NIPT screening timeline looks like. A genetic counselor translates statistical risk into practical meaning — they do this all day and are significantly more useful than internet research. Sessions run 60–90 minutes and can be requested through your RE's practice or booked independently. If you received complex results at any point in your IVF cycle, this is a meaningful investment.`},
   {id:'f-003',phase:'first',weekRange:null,track:'Emotional',
+   tags:[],
    title:`Managing first-trimester anxiety: what the evidence supports`,
    body:`Cognitive behavioral therapy (CBT) has the strongest evidence base for fertility-related anxiety — specifically, cognitive restructuring (identifying and challenging worst-case thinking patterns) and behavioral activation (structured activity during the wait). Mindfulness-based stress reduction shows benefit in some studies. The lowest-evidence strategy that intended parents use most: searching symptoms and outcomes online. Research consistently shows internet research increases anxiety without improving information quality. If anxiety is significantly impairing your sleep or daily function — not just present, but impairing — a therapist with fertility specialization is a meaningful, time-limited investment. RESOLVE (resolve.org) maintains a therapist directory specifically for this context.`},
   {id:'f-004',phase:'first',weekRange:[6,8],track:'Bonding',
+   tags:[],
    title:`The first heartbeat: why it lands the way it does`,
    body:`Research on intended parents consistently identifies the first ultrasound heartbeat as the single most significant bonding moment of the pregnancy — often more impactful than the positive test and, for many, comparable to the birth itself. Developmental psychologists describe it as the moment the baby becomes genuinely real for both parents. Neuroimaging studies on fathers show activation of the same brain circuits during the first heartbeat image as during direct infant contact later in life. If you can be present for this appointment, do everything reasonable to be there. If logistics make that impossible, ask for a recording — your agency or GC can arrange this in almost every case. This is not a moment to experience secondhand if you can avoid it.`},
   {id:'f-005',phase:'first',weekRange:null,track:'Logistics',
+   tags:['pediatrician'],
    title:`The pediatrician search: why the first trimester is the right time`,
    body:`Quality pediatric practices in most urban and suburban areas fill their new patient openings quickly — in competitive markets, starting at 8–10 weeks gives you access to the full field. Starting at 34 weeks means choosing from whoever has availability. The prenatal consultation (a free or low-cost meet-and-greet visit) is your primary screening tool. Ask about: hospital affiliation (the pediatrician must be affiliated with your delivery hospital to attend the birth and do the first newborn exam), after-hours nurse line, vaccine schedule philosophy, and experience with surrogacy or donor-conceived families. Interview at least two or three practices. Aim to have a pediatrician confirmed by end of second trimester — then notify them of your due date.`},
   {id:'f-006',phase:'first',weekRange:null,track:'Emotional',
+   tags:['anxiety-content','loss-adjacent'],
    title:`Miscarriage risk in the first trimester: knowing the real numbers`,
    body:`Approximately 10–20% of known pregnancies end in miscarriage, the vast majority in the first trimester, and the probability drops sharply after a heartbeat is confirmed at 6–8 weeks — to roughly 5% after a confirmed heartbeat, and lower still after week 10. Intended fathers in surrogacy arrangements face a specific psychological challenge: the loss would be theirs, but the physical experience and the primary medical relationship belong to their GC. Studies of surrogacy-specific pregnancy loss (Söderström-Anttila et al.) document that intended parents often report profound grief without social acknowledgment — the miscarriage is not recognized as "theirs" in the same way by outside observers. Knowing the actual risk at each stage helps calibrate anxiety to evidence rather than worst-case imagination. If you lose a pregnancy: your grief is legitimate, you are entitled to support, and the loss does not predict the outcome of a subsequent attempt.`},
   {id:'f-007',phase:'first',weekRange:[6,12],track:'Medical',
+   tags:['anxiety-content'],
    title:`NIPT: what non-invasive prenatal testing can and cannot tell you`,
    body:`Non-invasive prenatal testing (NIPT), offered from as early as 10 weeks, screens for chromosomal conditions — trisomy 21 (Down syndrome), trisomy 18, trisomy 13, and sex chromosome abnormalities — via cell-free fetal DNA in the carrier's bloodstream. It is a screening test, not a diagnostic test: a positive result indicates elevated risk and requires confirmation via diagnostic testing (CVS or amniocentesis). False positives occur — at a rate that depends on the condition screened and the population — meaning a positive NIPT result is not a diagnosis. Sensitivity (detection rate) for trisomy 21 is approximately 99%; specificity (true negative rate) is similarly high, but positive predictive value in low-risk populations can be as low as 50% for some conditions. Your genetic counselor will contextualize the results against your specific risk profile. Decision-making about follow-up testing is yours as the intended parent; your GC will be the one undergoing any invasive procedures, so that conversation needs to happen together and early.`},
   {id:'f-008',phase:'first',weekRange:null,track:'Legal',
+   tags:['pre-birth-order'],
    title:`What a pre-birth order actually does — and why timing matters`,
    body:`A pre-birth order (PBO) is a court order, obtained before delivery, that establishes your legal parentage from the moment of birth. Without it, the gestational carrier — and in some states, her spouse — is the legal parent at birth by default, and you would need to complete a separate adoption or parentage action post-birth. With a PBO, your name goes directly on the birth certificate, you have immediate legal authority to make medical decisions for the baby in the NICU or delivery room, and there is no gap in parental rights. PBOs are available in most but not all US states; a handful of states require post-birth parentage actions instead. The filing window varies by jurisdiction — most attorneys target weeks 20–28, requiring drafting and legal coordination to begin in the first trimester. If your attorney has not raised this timeline by week 8–10, raise it yourself. The cost of moving slowly is a gap in legal parentage on the most consequential day.`},
   {id:'f-009',phase:'first',weekRange:null,track:'Self',
+   tags:[],
    title:`First trimester anxiety is chemically real, not a mindset failure`,
    body:`The first trimester is consistently rated by intended fathers as the most anxiety-dense phase of the surrogacy journey — higher than the two-week wait, higher than delivery. The combination of confirmed pregnancy, high miscarriage base rates, physical distance from the pregnancy, and limited control creates a specific stress profile that researchers describe as "anxious attachment to an uncertain outcome." Cortisol dysregulation during this period has been documented in both gestational carriers and intended parents. The evidence on what actually helps: behavioral approaches outperform cognitive ones in this context. Behavioral: establish a check-in rhythm with your GC (not constant contact, which increases anxiety in both parties — a structured cadence), schedule something to look forward to, reduce ambient information intake about pregnancy risk. Cognitive reframing ("I should feel better about this") is less effective than action that creates a sense of agency. You cannot think your way calm; you have to move your way there.`},
   {id:'f-010',phase:'first',weekRange:[8,12],track:'Bonding',
+   tags:[],
    title:`The first ultrasound photos: why you should print one`,
    body:`Ultrasound images feel abstract — a gray smudge that requires someone to point out what you're looking at. The research on prenatal bonding in intended fathers suggests that physical objects associated with the pregnancy serve as bonding anchors: something tangible that makes the abstract real. A printed ultrasound photo on your desk, in your wallet, or on the refrigerator creates repeated visual exposure to the fact of the baby — what developmental psychologists call "prenatal representation," the mental model of the baby as a real person. Fathers in surrogacy arrangements specifically benefit from these objects because they lack the continuous physical reminder that a gestating parent carries. Ask your GC for a copy of the image. Print it. Put it somewhere you will see it every day. This is not sentimental — it is a practical bonding intervention with documented effect on paternal engagement outcomes.`},
   {id:'f-011',phase:'first',weekRange:null,track:'Logistics',
+   tags:['doc-folder'],
    title:`Build your first-trimester document folder now, not later`,
    body:`The paperwork volume of surrogacy and new parenthood is significant and arrives in waves: gestational carrier agreement, fertility clinic records, NIPT results, PBO filing, insurance enrollment documentation, hospital pre-registration, birth plan, pediatrician intake forms. The families who navigate this smoothly share one habit: a single organized repository — physical or digital — started before the documents arrive. The cost of not having one: critical documents are in email threads, text messages, or "somewhere I printed it," which creates real risk at moments of urgency (the delivery room, the NICU, the pediatrician's first visit). Recommended structure: one folder per category (Legal, Medical, Insurance, GC Communication), named by date and document type. Cloud backup is not optional — paper folders get left at home when you are at the hospital.`},
   {id:'f-012',phase:'first',weekRange:null,track:'Emotional',
+   tags:['announcements'],
    title:`Why telling people feels complicated when the pregnancy isn't yours to announce`,
    body:`Intended parents in surrogacy face a disclosure question with no clear social script: when and how to tell people, given that the pregnancy is being carried by someone else, the news is inherently about a third party, and the gestational carrier may have her own preferences about privacy. Common tensions: the intended parents want to share their joy; the GC may or may not want her pregnancy publicly known; extended family and friends may have intrusive, uninformed, or hurtful reactions to the surrogacy arrangement itself. Clinical recommendations from surrogacy-experienced therapists (Covington & Burns, 2006) include: align with your GC on disclosure before sharing publicly, be deliberate about who learns about the GC specifically (versus just "we're expecting"), and prepare a 2–3 sentence response to intrusive questions that you both agree on. Your joy is legitimate and worth sharing — it just benefits from coordination first.`},
   {id:'f-013',phase:'first',weekRange:[6,10],track:'Medical',
+   tags:[],
    title:`Morning sickness in your GC: what it means and what you can do`,
    body:`Nausea and vomiting of pregnancy affects approximately 70–80% of pregnant people, typically beginning at week 6 and peaking at weeks 8–10. The mechanism involves the rapid rise of hCG (human chorionic gonadotropin) — the same hormone detected by pregnancy tests — along with estrogen and progesterone changes. Severe nausea that prevents adequate nutrition and hydration (hyperemesis gravidarum) affects 0.5–2% of pregnancies and requires medical management. As an intended parent, your role is to acknowledge it directly, not minimize it, and to offer concrete help rather than general sympathy. Concrete helps: offer to send food delivery on bad days, adjust communication expectations during symptom peaks, ask what she needs rather than guessing. The GC is managing a significant physical burden on behalf of your family — that reality deserves explicit acknowledgment. Don't wait for her to tell you it's hard.`},
   {id:'f-014',phase:'first',weekRange:null,track:'Self',
+   tags:[],
    title:`The books that are actually worth reading — and what to skip`,
    body:`The expectant father book market is large and uneven. What's worth your time: "The Expectant Father" (Brott & Ash) remains the most comprehensive week-by-week guide written specifically for fathers. "Becoming a Dad" (Singley & Edwards) addresses paternal identity and mental health directly. For surrogacy-specific preparation, "Having Your Baby Through Egg Donation" (Glazer & Sterling) covers the intended parent experience in clinical detail, and "Surrogacy Was the Way" (Healy) documents the experience from the intended father's perspective. What to skip: most general pregnancy books are written for and about the gestational parent's experience — they will be informative about what your GC is going through but will not address your psychological reality. Podcasts worth adding: "Men and Miscarriage," "The Dads" (BBC), and the surrogacy-focused episodes of "Circle Surrogacy" podcast. Prioritize sources written specifically for non-gestational parents.`},
   {id:'f-015',phase:'first',weekRange:null,track:'Bonding',
+   tags:['has-partner'],
    title:`Name conversations: more than a preference exercise`,
    body:`The research on prenatal bonding suggests that naming — even tentatively, even as a working nickname — accelerates the psychological transition from "the pregnancy" to "the baby" in a parent's internal world. This is not about committing to a name before you are ready; it is about the cognitive and emotional shift that occurs when an abstract future person acquires a personal identifier. Fathers in surrogacy arrangements who begin referring to the baby by name or nickname during the first trimester report stronger prenatal attachment scores than those who defer naming until after birth. The same effect has been observed in fathers of donor-conceived children. Have the name conversation early — not to decide, but to begin. The working nickname you use with your partner before the real name is chosen is doing bonding work whether or not you intend it to.`},
   {id:'f-016',phase:'first',weekRange:[10,13],track:'Medical',
+   tags:['anxiety-content'],
    title:`The nuchal translucency scan: what you are looking at and why it matters`,
    body:`The nuchal translucency (NT) scan, performed at 11–14 weeks, measures the fluid-filled space at the back of the baby's neck. An increased NT measurement (above 3.5mm is the common threshold) is associated with elevated risk for chromosomal abnormalities including trisomy 21, trisomy 18, and trisomy 13, as well as some structural heart defects. The NT scan is combined with first-trimester blood markers (PAPP-A and free beta-hCG) to produce a composite risk score — this is the "combined first-trimester screening" or "first-trimester combined test." A normal NT scan does not rule out chromosomal conditions; it reduces probability. An abnormal result triggers a conversation about NIPT or diagnostic testing, not an automatic intervention decision. For intended parents: this is an appointment you should attend or join remotely if at all possible. The first detailed look at fetal anatomy is a bonding moment, not just a medical data point.`},
   {id:'f-017',phase:'first',weekRange:null,track:'Emotional',
+   tags:[],
    title:`Managing the gap between your experience and everyone else's expectations`,
    body:`Intended fathers in surrogacy consistently report a social mismatch: the outside world either does not know, does not understand, or does not know how to respond to the surrogacy arrangement — and their reactions, however well-intentioned, frequently miss the mark. "Is she your surrogate?" asked in front of your GC. "So you'll get to skip all the hard parts!" from someone who hasn't thought it through. "Is it really yours?" from someone who has no filter. These interactions are fatiguing and can be isolating. Clinical support for managing this: prepare a brief, confident script for common questions ("We're working with a gestational carrier — we're really excited"); choose in advance which relationships deserve fuller explanation and which don't; and identify one or two people in your life who can receive the full story without requiring you to educate them about surrogacy basics first. You do not owe everyone an explanation. You do owe yourself the support of people who get it.`},
 
   // ── SECOND TRIMESTER — 5 new cards (s-001 to s-005) ──
   {id:'s-001',phase:'second',weekRange:[16,32],track:'Medical',
+   tags:[],
    title:`Fetal movement: what the research says to watch for`,
    body:`Your GC will begin feeling fetal movement between weeks 16 and 25 — first described as flutters, then distinct kicks and rolls. Movement peaks in frequency around weeks 28–32. The ACOG doesn't universally endorse formal kick counting for uncomplicated pregnancies, but recommends that pregnant people learn their baby's movement patterns and report any significant change. As an intended parent, the most useful thing is to ask your GC to describe movement updates — many IPs find these reports a meaningful connective thread during a phase when you're physically removed from the pregnancy. A baby that moves significantly less than usual in a 24-hour period is worth a same-day call to the OB.`},
   {id:'s-002',phase:'second',weekRange:null,track:'Self',
+   tags:[],
    title:`Paternal prenatal depression: real, common, and underdiagnosed`,
    body:`A 2010 meta-analysis in JAMA found that 10.4% of fathers experience depression during the prenatal and early postpartum period — a rate comparable to maternal perinatal depression but diagnosed at a fraction of the rate. Risk factors include a personal history of depression, relationship conflict, financial stress, fertility journey trauma, and low social support — all elevated in surrogacy-path families. Symptoms in fathers often look different than in mothers: irritability, social withdrawal, overwork, and substance use rather than classic low mood. A validated screening tool (the PHQ-9) takes three minutes online. If your score is elevated, bring it to your primary care physician. This is treatable, and earlier is better.`},
   {id:'s-003',phase:'second',weekRange:null,track:'Logistics',
+   tags:[],
    title:`Building your village: the conversation most people don't have`,
    body:`Research on new parent outcomes consistently identifies social support as one of the strongest protective factors against postpartum depression, relationship strain, and early parenting stress. The catch: support doesn't arrive automatically — it requires explicitly asking. Most first-time parents significantly overestimate how much help will materialize on its own. The conversations worth having now: who will bring meals for the first two weeks? Who can you call at 2am? Who can take the baby for three hours so you can sleep? Specific requests get specific commitments. Vague "let me know if you need anything" offers rarely convert. Make a list of the people in your life, what they're capable of, and what you'll actually ask them for.`},
   {id:'s-004',phase:'second',weekRange:null,track:'Bonding',
+   tags:['has-partner'],
    title:`The babymoon: why investing in the relationship now pays off later`,
    body:`Relationship satisfaction shows a statistically significant decline in the year following a first baby's birth — documented across cultures and income levels in longitudinal research. The causes are familiar: sleep deprivation, role adjustment, unequal division of new labor, the simple loss of time for each other. Research on couples who invest intentionally in their relationship during pregnancy — date nights, explicit check-ins, a trip together — shows better relationship quality in the postpartum period compared to couples who don't. The babymoon doesn't need to be elaborate. The point is intentionality: you're here together, before everything changes, and you know it. Take that seriously while you still can.`},
   {id:'s-005',phase:'second',weekRange:[17,21],track:'Medical',
+   tags:['anxiety-content'],
    title:`After the anatomy scan: how to interpret follow-up findings`,
    body:`Approximately 3% of anatomy scans reveal findings that require follow-up — usually called "soft markers." Common examples: an echogenic intracardiac focus (a bright spot in the heart), choroid plexus cysts (small fluid pockets in the brain), or mild renal pelvis dilation. In isolation, without other abnormal findings, most soft markers have very low positive predictive value — the vast majority resolve without consequence. But the appropriate response is not to Google the finding at midnight; it's to ask for a referral to a maternal-fetal medicine specialist (MFM). MFMs interpret prenatal ultrasounds all day and can contextualize a finding far better than any search result. Request an MFM consult before drawing any conclusions.`},
   {id:'s-006',phase:'second',weekRange:[18,22],track:'Medical',
+   tags:['anxiety-content'],
    title:`The anatomy scan: what it checks and how to prepare for what it might find`,
    body:`The mid-pregnancy anatomy scan (typically performed at 18–22 weeks) is the most comprehensive fetal assessment before birth. The sonographer systematically evaluates brain structure, spine, heart (four chambers, outflow tracts), kidneys, bladder, limbs, face, and placental position. For most families the scan is reassuring; for roughly 1 in 50, it identifies a finding that requires follow-up — ranging from soft markers that often resolve (choroid plexus cysts, echogenic bowel) to structural findings that require specialist referral. As an intended parent who may be attending remotely or via shared images, prepare by: asking in advance whether you can join by video call, having your NIPT results accessible (the anatomy scan and NIPT together provide a much clearer picture than either alone), and understanding that a request for a follow-up scan or specialist referral is common and does not automatically indicate a serious problem. The anatomy scan is also often the first time fetal sex can be confirmed, if you want to know.`},
   {id:'s-007',phase:'second',weekRange:null,track:'Legal',
+   tags:['leave-paperwork'],
    title:`Leave paperwork: why you need to start now even though birth is months away`,
    body:`Paternity, parental, and bonding leave applications are consistently filed too late by first-time fathers — the paperwork windows open earlier than most people expect, and the consequences of missing them include receiving less leave than you are entitled to, a gap in income continuation, or starting leave before coverage is approved. In the US: FMLA (12 weeks unpaid federal protection) requires 30 days advance notice when foreseeable; state-level paid leave programs (California PFL, New York PFL, Washington PFML, etc.) have their own filing windows and wage replacement rates; employer-sponsored paternity/parental leave is governed by your HR policies, which often require 30–90 days notice. The second trimester is the correct time to: obtain your employer's parental leave policy in writing, identify which state and federal programs you are eligible for, calculate your combined income replacement, and file any pre-notifications required. Waiting until the third trimester is common and costs people leave days or income continuity.`},
   {id:'s-008',phase:'second',weekRange:null,track:'Bonding',
+   tags:[],
    title:`Feeling the baby move — and why it matters differently when you're not the one feeling it`,
    body:`Quickening — the first perception of fetal movement — typically occurs for gestational carriers between weeks 16 and 25, with multiparous carriers often noticing it earlier. For the intended parent, fetal movement is a bonding milestone that requires active access rather than passive experience. Research on paternal prenatal attachment (Condon, 1993; Habib & Lancaster, 2006) consistently shows that the first time a father feels fetal movement is among the highest-impact bonding events of the entire pregnancy, correlating with increased engagement post-birth. In a surrogacy arrangement, this experience requires your GC's active participation: she needs to tell you when movement is consistent enough to feel externally, and you need to be present — physically or at a scheduled in-person visit — to experience it. This is worth explicitly asking for. Don't assume the invitation will come; ask your GC directly: "When you're feeling consistent movement, can we plan a visit so I can feel it too?" Most GCs are glad to facilitate this.`},
   {id:'s-009',phase:'second',weekRange:[20,28],track:'Logistics',
+   tags:['nursery'],
    title:`Nursery setup: what actually needs to be ready before birth vs. what can wait`,
    body:`The nursery industry is optimized to make you feel like everything must be purchased and assembled before the baby arrives. The actual safety-critical list is short: a firm, flat sleep surface with a fitted sheet (crib, bassinet, or play yard — no soft bedding, no inclined sleepers); a changing area with wipe access; and basic feeding supplies. Everything else — decorations, themed furniture, coordinated storage — is optional and can be acquired or assembled postpartum. The AAP's safe sleep guidelines are unambiguous: firm surface, alone, on back, in the parents' room for the first 6 months. A $30 play yard next to your bed satisfies this. The expensive crib in a decorated nursery across the hall does not improve safety and may decrease it if it discourages room-sharing. Second trimester is the right time to acquire the safety-critical items and defer the rest; ordering large furniture items at week 36 creates stress you don't need.`},
   {id:'s-010',phase:'second',weekRange:null,track:'Emotional',
+   tags:[],
    title:`The halfway point: what the second trimester does to your psychological state`,
    body:`Prospective fathers in surrogacy consistently report a mid-pregnancy psychological shift that researchers describe as "increased concreteness" — the abstract future child becomes more real, the emotional stakes rise, and anxiety often migrates from "will this work" to "can I do this." This is distinct from the first-trimester anxiety driven by uncertainty; it is a forward-looking identity anxiety. You are beginning to construct a mental model of yourself as a father, and the distance between who you are now and who that person is can feel significant. This is developmentally normal and not predictive of outcome. The evidence-based response is exposure: spending time with infants, having direct conversations with fathers of young children, and engaging concretely with preparation tasks (reading, nursery, leave planning) reduces the abstraction and the anxiety with it. The second trimester is when the preparation stops being hypothetical.`},
   {id:'s-011',phase:'second',weekRange:[16,24],track:'Medical',
+   tags:['anxiety-content'],
    title:`Cervical length and preterm risk: what your GC's OB may be monitoring`,
    body:`Transvaginal cervical length measurement is used in the second trimester to screen for preterm birth risk, particularly in patients with risk factors including prior preterm birth, uterine anomalies, or multiple gestations. A cervical length below 25mm before 24 weeks is associated with elevated preterm risk; the intervention options include progesterone supplementation and cervical cerclage. For intended parents, this monitoring is relevant because: (1) it may affect your delivery timing assumptions, (2) it is part of a medical conversation your GC is having with her OB that you should be informed about, and (3) a cerclage procedure has activity restrictions that affect your GC's daily life. The majority of gestational carriers will not require this intervention; the point is that second-trimester OB appointments contain medical information relevant to your planning, and maintaining communication with your GC about her prenatal care — with appropriate respect for her medical privacy — is part of the intended parent's responsibility.`},
   {id:'s-012',phase:'second',weekRange:null,track:'Self',
+   tags:[],
    title:`Sleep before birth: the evidence on why you should be building a reserve now`,
    body:`Sleep deprivation research in new parents documents a consistent pattern: the most acute sleep loss occurs in weeks 1–12 postpartum, with parents averaging 4.4–5.3 hours of fragmented sleep per night. The physiological and cognitive effects — reduced working memory, impaired emotional regulation, slower reaction time — are well-documented and accumulate with consecutive nights of disruption. What is less known: sleep banking, the practice of extending sleep duration before a period of expected deprivation, has shown partial benefit in controlled studies (Rupp et al., 2009), particularly for sustained attention and mood. The effect is modest but real — you cannot fully pre-sleep your way through newborn nights, but you can reduce your deficit. The second trimester is the correct time to begin: establish a consistent sleep schedule, reduce late-night screen exposure, and address any sleep issues (apnea, insomnia) before they compound with infant sleep disruption. This is a concrete action with documented ROI.`},
   {id:'s-013',phase:'second',weekRange:null,track:'Surrogacy',
+   tags:[],
    title:`Your GC's second trimester: what she's experiencing that you may not be seeing`,
    body:`The second trimester is generally the most physically comfortable phase of pregnancy for gestational carriers — nausea typically resolves, energy returns, and the physical burden of the third trimester has not yet arrived. Psychologically, research on gestational carriers (Berend et al., 2012; Jadva et al., 2012) documents that second-trimester GCs often experience a shift in their relationship to the intended parents: the early uncertainty is resolved, the pregnancy is established, and the relationship moves from transactional coordination to genuine connection. This is the phase where small gestures matter disproportionately: a check-in that isn't about a medical appointment, acknowledging her physical experience, remembering details she's mentioned. GCs in surrogacy outcomes research consistently cite "feeling seen as a person, not just a carrier" as a primary factor in relationship satisfaction — and relationship quality between GC and intended parents predicts both her experience and yours.`},
   {id:'s-014',phase:'second',weekRange:[24,28],track:'Medical',
+   tags:['anxiety-content'],
    title:`Glucose screening and gestational diabetes: what it means if your GC's results are elevated`,
    body:`The glucose challenge test (GCT), typically administered at 24–28 weeks, screens for gestational diabetes mellitus (GDM), which affects approximately 6–9% of pregnancies. A GCT result above 140 mg/dL triggers the three-hour glucose tolerance test (GTT) for confirmation; a positive GTT diagnoses GDM. GDM is managed via diet modification, sometimes insulin or oral medication, and increased monitoring — including more frequent ultrasounds and non-stress tests in the third trimester. For intended parents: GDM is a manageable condition that, well-controlled, does not significantly increase adverse outcomes. Poorly controlled GDM is associated with macrosomia (large baby), which affects delivery planning. If your GC is diagnosed with GDM, the practical implications include: her diet restrictions are real and accommodation matters (adjust shared meals or food gifts accordingly), third-trimester monitoring will increase, and early delivery induction may be discussed if glucose control is difficult.`},
   {id:'s-015',phase:'second',weekRange:null,track:'Logistics',
+   tags:[],
    title:`Hospital bag checklist: what to pack for yourself when your GC is the patient`,
    body:`Standard hospital bag lists are written for the birthing parent. As an intended parent, your bag needs are different — you are attending as a support person and as the baby's primary caregiver from discharge. For yourself: a change of clothes for each expected hospital day, phone charger (long cable — hospital outlets are always inconveniently placed), snacks (the cafeteria is not always accessible at 3am), insurance cards and ID, printed copy of the pre-birth order, NICU-ready documentation if there is any preterm risk. For the baby: going-home outfit, car seat (must be installed and inspected before you leave for the hospital), one sleeper per expected hospital day, feeding supplies appropriate to your feeding plan. Practical notes: pack your bag at week 36, not week 38 — second trimester is when you create the list, not necessarily when you pack, but having the list finalized removes a cognitive task from the third-trimester crunch.`},
   {id:'s-016',phase:'second',weekRange:null,track:'Emotional',
+   tags:['has-partner'],
    title:`When your partner and you are processing the pregnancy differently`,
    body:`In two-parent intended-parent families, the second trimester often surfaces a divergence in how each partner is engaging with the pregnancy. Research on same-sex and heterosexual intended parent couples in surrogacy (Greenfeld & Seli, 2011) documents that one partner frequently becomes the "primary coordinator" (managing GC communication, medical updates, logistics) while the other is more emotionally distant or less engaged in day-to-day details. This division often has practical logic but can create relational strain: the coordinating partner feels alone in carrying the emotional weight; the less-involved partner may feel shut out or uncertain how to engage. The second trimester — when the pregnancy is stable but birth is not yet imminent — is the ideal time to address this explicitly rather than waiting for postpartum stress to surface it. Identify one concrete area where the less-engaged partner takes primary ownership. Shared investment in a specific preparation task is more effective than a general conversation about "needing to be more involved."`,},
   {id:'s-017',phase:'second',weekRange:[14,20],track:'Bonding',
+   tags:[],
    title:`Learning what to look for in the ultrasound: making the abstract visible`,
    body:`Ultrasound images are difficult to interpret without training — the gray-and-white smear is meaningful to a sonographer who knows what to look for, less legible to a first-time parent. This gap matters for bonding: the anatomy scan and growth scans are prime opportunities for the intended parent to connect with the pregnancy in a concrete way, but only if you can actually see what you're looking at. Before the anatomy scan: watch a 10-minute YouTube walkthrough of second-trimester ultrasound anatomy (several are made for expectant parents rather than medical students). Learn to find the spine, the profile view, the four chambers of the heart. Ask the sonographer or your GC to narrate during the scan if you are attending. The research on prenatal bonding shows that "seeing the baby as a baby" — not just registering that a scan occurred — is what drives the bonding effect. The investment of 20 minutes of preparation dramatically increases the return on the scan itself.`},
 
   // ── THIRD TRIMESTER — 5 new cards (t-009 to t-013) ──
   {id:'t-009',phase:'third',weekRange:[35,41],track:'Medical',
+   tags:[],
    title:`Signs of labor: what your GC should tell you, and when`,
    body:`True labor is distinguished from prodromal (practice) labor by three criteria: contractions that are regular, becoming progressively closer and stronger, and don't stop with hydration or movement. Other signs requiring immediate hospital contact: rupture of membranes (water breaking) — regardless of contractions, she goes in promptly; bloody show (mucus plug passing) — a sign labor is near but not a 911 scenario. Your GC's OB will give her the 5-1-1 rule: call when contractions are 5 minutes apart, lasting 1 minute, for at least 1 hour. Your conversation with your GC should establish explicitly: at what point does she call you — before she calls the hospital, or after? Who is her first call if labor starts at 2am? Clarity now prevents a scramble then.`},
   {id:'t-010',phase:'third',weekRange:[28,36],track:'Logistics',
+   tags:['pediatrician'],
    title:`Choosing your pediatrician: what the interview should cover`,
    body:`If you haven't confirmed a pediatrician, do it now. The prenatal consultation is your primary screening tool. Questions that matter: Is the practice affiliated with your delivery hospital — so the same pediatrician can attend the birth and perform the first newborn exam? What is the after-hours call process? What is the vaccine schedule protocol (for newborns, this is non-negotiable — confirmed immunization schedules protect your immunocompromised infant)? Is the practice experienced with surrogacy-born or donor-conceived children? What is the typical wait for sick visits? Interview at least two practices. Red flags: dismissiveness about your surrogacy background, evasiveness about vaccine schedules, inability to describe the after-hours process clearly. The goal is someone you'd trust at 3am with a sick newborn.`},
   {id:'t-011',phase:'third',weekRange:[32,38],track:'Self',
+   tags:['infant-cpr'],
    title:`Infant CPR: take the class before birth, not after`,
    body:`Infant CPR differs from adult technique: two-finger compressions at the center of the chest, 1.5 inches deep, at 100–120 per minute, 30 compressions followed by 2 gentle rescue breaths, with the infant's airway tilt adjusted for their proportions. Both the American Heart Association and AAP recommend that new parents complete an infant CPR course before the baby comes home. Many hospitals offer free or subsidized classes for expectant parents; the Red Cross and AHA run sessions nationally. The most common real-world scenario requiring infant CPR is choking, not cardiac arrest — the course covers both. The skill is perishable: if you completed training more than 12 months ago, do a refresher. This is one preparation that requires almost no debate.`},
   {id:'t-012',phase:'third',weekRange:[34,40],track:'Emotional',
+   tags:['anxiety-content','prior-loss'],
    title:`Birth anxiety in intended parents: what the research shows`,
    body:`Research on intended parents consistently identifies the approach to birth as one of the highest-anxiety phases of the entire surrogacy journey — comparable in intensity to the two-week wait after transfer. The specific sources are well-documented: no control over timing (your GC calls you, not the other way around), fear of missing the birth, uncertainty about whether hospital staff will recognize your role, and the accumulated weight of a long journey finally arriving at its end. Evidence-based strategies: build a specific hospital arrival plan, communicate your fears to your GC explicitly before week 36, and debrief with your agency on what to expect. If anxiety is disrupting your sleep or daily function, a single session with a fertility-specialized therapist before birth is worth the investment.`},
   {id:'t-013',phase:'third',weekRange:[33,38],track:'Bonding',
+   tags:[],
    title:`Nesting in intended parents: the urge to prepare is real`,
    body:`"Nesting" — the drive to prepare and organize the home environment before a baby arrives — is well documented in pregnant women. Research on intended parents finds a parallel phenomenon that is not hormonally driven: many IPs report a sudden, intense drive to complete the nursery, reorganize the home, finish long-deferred projects, and stock the pantry beginning around weeks 33–36. Researchers believe this is triggered by the approaching transition itself rather than pregnancy biology. A 2012 study by Jadva et al. on intended parent experiences specifically documented nesting behavior as one of the most commonly reported third-trimester experiences. If you feel this drive: lean into it. It is productive preparation and meaningful psychological readiness.`},
 
   // ── NEWBORN — 10 new cards (n-008 to n-017) ──
   {id:'n-008',phase:'newborn',weekRange:null,track:'Medical',
+   tags:[],
    title:`Tummy time: start on day one, not month one`,
    body:`The American Academy of Pediatrics recommends supervised tummy time beginning the first day home from the hospital. The evidence is clear: tummy time prevents positional flat head (plagiocephaly — which increased significantly after the "back to sleep" campaign), and builds the neck and shoulder strength that enables head control at 3–4 months and rolling at 4–5 months. Start with 2–3 minutes, 2–3 times daily; increase gradually to 15–30 minutes per day by 3 months. Many newborns protest tummy time loudly. This is expected and not a reason to stop — it means you're doing it correctly. Always use a firm, flat surface. Never let a baby sleep in the tummy time position. The protest doesn't last; the motor development it produces does.`},
   {id:'n-009',phase:'newborn',weekRange:null,track:'Medical',
+   tags:['first-time-parent'],
    title:`Decoding baby cries: what the research actually says`,
    body:`Infant crying is an evolved alarm signal — specifically designed by natural selection to be aversive to caregivers. Research identifies broad acoustic patterns: hunger cries tend to be rhythmic and repetitive; pain cries have sudden onset and higher pitch; overstimulation cries often accompany drowsiness cues like eye-rubbing. But the research is also clear on one important limitation: you cannot reliably decode specific meanings from cry acoustics alone, especially with a newborn you don't yet know. What you learn over the first weeks is your baby's patterns — what typically precedes crying, what reliably soothes them, what their baseline sounds like. The useful frame is not "what is this cry telling me?" but "what have I tried, and what works for this specific baby?" It takes time. That's normal.`},
   {id:'n-010',phase:'newborn',weekRange:null,track:'Medical',
+   tags:['first-time-parent'],
    title:`The witching hour: what's happening and what helps`,
    body:`Between weeks 2 and 6, most babies have a predictable period of intense fussiness — typically in the late afternoon and evening — that is not explained by hunger, illness, or discomfort. This is normal and well-documented: the PURPLE crying period (Peak of crying, Unexpected, Resists soothing, Pain-like face, Long lasting, Evening timing). It peaks around 6 weeks and typically resolves substantially by 3–4 months. What helps most: Harvey Karp's 5 S's (swaddle, side or stomach hold, shush, swing, suck). One critical note: if you've tried everything and cannot soothe your baby, it is appropriate — and recommended — to place them safely in their crib and take a five-minute break. Shaken baby syndrome is a real risk in moments of exhausted desperation. Put the baby down safely; walk away briefly; return when you're steadier.`},
   {id:'n-011',phase:'newborn',weekRange:null,track:'Medical',
+   tags:['first-time-parent'],
    title:`The first three months: what's actually developing`,
    body:`Month one: your baby responds to faces within 12 inches, startles to sound, roots reflexively for feeding, and sleeps 14–17 hours per day in fragments of 2–4 hours. Month two: social smiling emerges — one of the most reinforcing developmental milestones for new parents and neurologically significant. Cooing begins. The baby tracks moving objects. Month three: extended wake periods appear. Head lifts during tummy time. The baby recognizes familiar voices and faces with visible excitement. What is not yet developed: the ability to self-soothe (cortical inhibition isn't mature), sleep consolidation (night waking is biological, not behavioral), or stranger anxiety (that comes at 6–8 months). Knowing which developmental stage you're actually in makes the hard parts significantly less alarming.`},
   {id:'n-012',phase:'newborn',weekRange:null,track:'Self',
+   tags:[],
    title:`Paternal postpartum depression: the crisis nobody talks about`,
    body:`Paternal postpartum depression (PPPD) affects an estimated 8–10% of fathers — comparable to the rate of maternal postpartum depression but diagnosed at a fraction of the rate because healthcare systems rarely screen fathers. Risk factors include a personal history of depression, a partner with PPD, financial stress, fertility journey trauma, social isolation, and sustained sleep deprivation. Symptoms in fathers often don't look like classic depression: irritability, social withdrawal, overworking, risk-taking behavior, or increased alcohol use are common presentations. PPPD typically emerges in the 3–6 month postpartum window, not the first weeks. If you recognize these patterns, take the PHQ-9 online and bring the result to your primary care physician. PPPD responds to therapy, medication, or both. It is treatable, and early recognition changes the trajectory.`},
   {id:'n-013',phase:'newborn',weekRange:null,track:'Medical',
+   tags:['first-time-parent'],
    title:`Newborn sleep: what the research actually says to expect`,
    body:`A newborn's sleep architecture is fundamentally different from an adult's. Sleep cycles run 50–60 minutes (versus 90–120 for adults), and babies wake briefly between each cycle — which is biologically normal, not a problem to fix. Total sleep in weeks 1–4 averages 14–17 hours, fragmented across the day and night with no meaningful circadian rhythm yet. Night stretches of 4+ hours don't typically emerge before 6–8 weeks; 6-hour stretches before 3–4 months are the exception, not the rule. Sleep consolidation is a developmental process — it follows nervous system maturation, not sleep training quality. "Sleeping through the night" at 6 weeks is not a parenting achievement; it's biological outlier behavior. What helps most: take shifts, sleep when the baby sleeps, and remember that month three is meaningfully different from month one.`},
   {id:'n-014',phase:'newborn',weekRange:null,track:'Logistics',
+   tags:['first-time-parent'],
    title:`Visitor management: the rules most new parents wish they'd set`,
    body:`Newborns have immature immune systems and are particularly vulnerable to RSV, influenza, and whooping cough. Before 2 months of age, they've received no vaccines and carry only passive immunity from birth. The clinical reality: fever above 100.4°F in an infant under 8 weeks old requires an emergency room visit and, per AAP protocol, often a spinal tap to rule out meningitis. A preventable viral infection in a 3-week-old is a medical emergency. Reasonable, evidence-based visitor guidelines: no visits during RSV season (October–April) for the first 4–6 weeks; require current flu and Tdap (whooping cough booster) vaccination from anyone holding the baby; ask sick visitors to reschedule without apology. These are not neurotic preferences — they are appropriate infection risk management. You are allowed to enforce them.`},
   {id:'n-015',phase:'newborn',weekRange:null,track:'Medical',
+   tags:['anxiety-content'],
    title:`Jaundice: what it is, why it's common, and when it actually matters`,
    body:`Approximately 60% of term newborns develop visible jaundice in the first week of life — the yellow skin tone that starts at the head and moves downward. Most jaundice is physiological: caused by the normal breakdown of fetal red blood cells as the baby transitions to adult hemoglobin, clearing within 1–2 weeks without treatment. Jaundice becomes concerning when bilirubin rises high enough to risk neurological damage (kernicterus) — the threshold varies by gestational age and hours of life. Your pediatrician will check bilirubin levels at discharge and at the first follow-up visit. When treatment is needed, phototherapy (bili lights or a biliblanket) is straightforward and highly effective. Key warning signs: jaundice in the first 24 hours of life, or spreading rapidly to the abdomen and legs — both warrant same-day evaluation.`},
   {id:'n-016',phase:'newborn',weekRange:null,track:'Bonding',
+   tags:[],
    title:`Reading your baby: the serve-and-return interaction`,
    body:`The Harvard Center on the Developing Child's "serve-and-return" framework describes the fundamental unit of early bonding and brain development: baby expresses something (babbles, reaches, makes a face) → you respond (mirror it, narrate it, engage with it) → baby responds to your response. This back-and-forth is not merely heartwarming — it's a primary driver of neural circuit development in the first year. Edward Tronick's "still face" experiment, replicated extensively since 1978, demonstrated that even brief periods of unresponsive caregiver behavior cause measurable infant distress and stress hormone elevation. The practical implication: every responsive interaction you have with your baby is neurobiologically meaningful. Talk to them. Narrate what you're doing. Respond to their cues. You don't need to be perfect — you need to be present and responsive most of the time. That's what builds security.`},
   {id:'n-017',phase:'newborn',weekRange:null,track:'Self',
+   tags:[],
    title:`The father identity shift: patrescence is real`,
    body:`"Matrescence" — the identity transformation of becoming a mother — has received growing attention from researchers and the press. Its counterpart for fathers, "patrescence" (formally documented by Daniel Singley in 2015), is less discussed but equally real. Brain imaging studies of new fathers show measurable increases in activity in social cognition and emotional processing circuits after sustained caregiving — the caregiving brain is literally built through practice. The identity shift takes 12–24 months on average to integrate, not three months. Commonly reported experiences: a temporary loss of previous identity anchors (work identity, how you spent your time, your social role), disorientation in your relationship, and a profound reorientation of what matters to you. This is not a crisis. It is a reorganization. The research on men who navigate this most smoothly shows one consistent finding: they name what's happening rather than pushing through it silently. Name it.`},
 
   {id:'n-018',phase:'newborn',weekRange:null,track:'Medical',
+   tags:[],
    title:`Safe sleep: the ABCs and why they work`,
    body:`The AAP safe sleep guidelines — Alone, on their Back, in a Crib — are the single most evidence-supported intervention for reducing SIDS and sleep-related infant death, which kills approximately 3,400 babies annually in the US. The back-sleep recommendation alone, introduced in 1994, reduced SIDS rates by more than 50% within a decade. "Alone" means no soft bedding, bumpers, pillows, positioners, or bed-sharing; a firm, flat surface in a separate sleep space. Room-sharing without bed-sharing (baby's crib or bassinet within arm's reach) is recommended for at least the first six months and reduces SIDS risk by up to 50% compared to sleeping in a separate room. The car seat, swing, and bouncer are not safe sleep surfaces for unmonitored sleep — transfer to flat surface once baby is out. These rules feel rigid because the risk curve is steep and the exceptions are not worth the odds.`},
   {id:'n-019',phase:'newborn',weekRange:null,track:'Medical',
+   tags:['first-time-parent'],
    title:`Feeding cues: what hunger actually looks like before the crying starts`,
    body:`Crying is a late hunger cue — by the time a newborn is crying from hunger, they are already stressed and harder to latch or settle for a bottle. Early feeding cues are subtler: rooting (turning head, opening mouth), sucking on hands or lips, increased alertness and movement, bringing hands to face. Middle cues include stretching, fussing, and restlessness. Learning to read early cues means calmer feeds and better intake, especially in the first weeks when every feeding matters for weight gain and supply establishment. Newborns typically feed 8–12 times per 24 hours — roughly every 2–3 hours — including overnight. That frequency is not a sign of insufficient milk or formula; it reflects the tiny stomach capacity (about the size of a marble at day one, growing to roughly a golf ball by two weeks) and fast digestion of human milk.`},
   {id:'n-020',phase:'newborn',weekRange:null,track:'Bonding',
+   tags:[],
    title:`Skin-to-skin contact has measurable biological effects — for dads too`,
    body:`Kangaroo care (skin-to-skin contact between parent and newborn) was originally developed in Bogotá in 1978 as a low-resource alternative to incubators. The evidence base that followed is now substantial: skin-to-skin contact stabilizes newborn heart rate, respiration, and temperature; reduces cortisol in both parent and infant; increases oxytocin in the parent; and in premature infants, reduces mortality. Critically, these effects have been documented for fathers, not just mothers. A 2012 study in Biological Psychiatry found that fathers who engaged in skin-to-skin contact showed measurable increases in oxytocin and cortisol responsiveness to infant cues comparable to mothers. The mechanism is thought to be sensory: the smell, warmth, and texture of the baby's skin trigger hormonal cascades that prime caregiving behavior. You do not need to be the gestational parent for this to work. Hold your baby chest-to-chest, skin-to-skin, as early and often as you can.`},
   {id:'n-021',phase:'newborn',weekRange:null,track:'Self',
+   tags:[],
    title:`Paternal postpartum depression is real and underdiagnosed`,
    body:`Approximately 10% of fathers experience postpartum depression — a rate that rises to 25–50% when the mother is also experiencing PPD. The presentation in men often differs from the classic low-mood picture: irritability, anger, withdrawal, risk-taking behavior, increased work hours, and somatic complaints (headaches, fatigue, GI symptoms) are common presentations in men who meet criteria for depression. The Edinburgh Postnatal Depression Scale was validated for fathers in 2004; many providers still don't screen for it. Risk factors include history of depression, financial stress, relationship conflict, poor sleep, and a partner with PPD. Untreated paternal PPD is associated with increased behavioral problems in children at 3.5 years, per a landmark 2006 study in the Lancet. If you notice persistent irritability, emotional flatness, or withdrawal from your baby or partner lasting more than two weeks — tell someone. Your pediatrician, your GP, or a therapist. This is medical, not moral.`},
   {id:'n-022',phase:'newborn',weekRange:null,track:'Logistics',
+   tags:['pediatrician'],
    title:`The pediatrician visit schedule in year one — what each appointment is actually for`,
    body:`Well-child visits in the first year follow a standard schedule: 3–5 days after birth (weight check, jaundice, feeding), 1 month, 2 months, 4 months, 6 months, 9 months, and 12 months. Vaccine appointments cluster at 2, 4, and 6 months — these are the visits most parents dread and most often delay, but on-schedule vaccination is one of the most evidence-supported things you can do for infant health. At each visit, the pediatrician is tracking growth curves (weight, length, head circumference), developmental milestones, and feeding. Your job is to arrive with specific questions written down — "is this normal?" questions are the whole point of these visits. The 9-month visit includes developmental screening for autism and motor delays. The 12-month visit includes blood lead and anemia testing. Keep the vaccination record somewhere you will not lose it — you will need it for daycare and school enrollment.`},
   {id:'n-023',phase:'newborn',weekRange:null,track:'Emotional',
+   tags:['first-time-parent'],
    title:`Why the first weeks feel like a test you weren't given the material for`,
    body:`The disorientation of early parenthood is well-documented and has a structural cause: nothing about caring for a newborn is intuitive for most first-time fathers. Unlike mammalian species where parenting behaviors are largely instinct-driven, human parenting is substantially learned — and the learning happens through repeated, low-stakes exposure over time. The problem is that the first weeks feel extremely high-stakes while the competency is still being built. Research on father confidence in early infancy (Pacey, 2013) found that paternal self-efficacy increases sharply after the first successful solo caretaking session — not from reading, not from classes, but from doing it alone and having it work. The implication: take the shift. Change the diaper. Do the 3am feed. Do the bath alone. Every competent repetition builds a neurological feedback loop that makes the next one feel less frightening. You cannot think your way into confidence; you have to earn it through action.`},
   {id:'n-024',phase:'newborn',weekRange:null,track:'Medical',
+   tags:['anxiety-content','first-time-parent'],
    title:`Newborn weight loss and regain: the numbers that actually matter`,
    body:`It is normal and expected for newborns to lose up to 7–10% of birth weight in the first few days of life as they pass meconium and adjust to extrauterine feeding. This is not a feeding failure. Most babies return to birth weight by 10–14 days and then gain approximately 5–7 ounces per week through the first three to four months. The weight check at the 3–5 day visit exists specifically to confirm the loss hasn't exceeded safe limits and that regain has begun. Signs that warrant earlier evaluation: loss greater than 10%, no regain by day 10–14, fewer than the expected number of wet diapers (6+ per day after day 4), or a baby who is difficult to rouse for feeds. In surrogacy and adoptive families where a breastfeeding supply is being established by a non-gestational parent or where donor milk or formula is used from the start, the weight trajectory can vary — discuss your specific feeding plan with your pediatrician at the first visit so expectations are calibrated correctly.`},
   {id:'n-025',phase:'newborn',weekRange:null,track:'Bonding',
+   tags:[],
    title:`Talking to your newborn is doing something — not just something to do`,
    body:`The language gap research originating with Hart and Risley (1995) — later refined and debated — established that the quantity and quality of words directed at infants in the first three years has lasting effects on vocabulary, school readiness, and cognitive outcomes. More recent work (Romeo et al., 2018) found that conversational turns — back-and-forth interaction rather than passive exposure — are the active ingredient, not sheer word count. For new fathers who feel self-conscious narrating to a baby who cannot respond in kind: the neurobiological case for doing it anyway is strong. Your baby's auditory cortex is processing your voice, learning the rhythm and phonology of language, and building the social expectation that communication is a two-way activity. Narrate the diaper change. Describe what you are cooking. Read aloud. Sing badly. The content is largely irrelevant; the interaction is the point.`},
   {id:'n-026',phase:'newborn',weekRange:null,track:'Self',
+   tags:[],
    title:`Sleep deprivation at the clinical level — what it actually does to you`,
    body:`The sleep disruption of the newborn period is not just tiredness. New parents average 4.4–6 hours of fragmented sleep per night in the first months — a pattern that, in research contexts, meets criteria for clinically significant sleep deprivation within 5–7 days. At this level: reaction time degrades comparably to a 0.10% blood alcohol level (above legal driving limits in all US states); emotional regulation capacity decreases significantly; working memory and executive function are measurably impaired; and pain sensitivity increases. This is relevant for decisions, for driving, and for your relationship. The research on coping strategies that actually work: sleep when the baby sleeps (not "do tasks when the baby sleeps"), consolidate overnight shifts with your partner rather than both being up for every feeding, and treat a 4-hour uninterrupted stretch as a genuine win rather than insufficient. You cannot willpower your way through clinical sleep deprivation — you have to manage it structurally.`},
   {id:'n-027',phase:'newborn',weekRange:null,track:'Emotional',
+   tags:['has-partner'],
    title:`Your relationship with your partner after the baby arrives — what the research says`,
    body:`The landmark Gottman Institute research on couples after the transition to parenthood found that 67% of couples reported a significant decline in relationship satisfaction in the first three years after having a child — a decline that did not occur in childless couples matched for age and relationship length. The drivers are predictable: sleep deprivation, role renegotiation, loss of couple time, unequal division of invisible labor, and reduced physical intimacy. The 33% of couples whose satisfaction increased or held steady shared one behavioral pattern: they maintained a minimum of regular, intentional connection — brief conversations that were not about logistics, physical affection that was not about sex, repair attempts after conflict. The Gottmans describe this as "turning toward" rather than away. You will not have time for long dates; you will have time to ask a real question and actually listen to the answer.`},
   {id:'n-028',phase:'newborn',weekRange:null,track:'Logistics',
+   tags:['leave-paperwork'],
    title:`Leave is a use-it-or-lose-it asset — take it deliberately`,
    body:`Paternity leave take-up rates in the US remain low even when leave is available: approximately 70% of fathers with access to paid leave take less than two weeks, and many take none. The reasons are largely cultural — fear of career penalty, signaling concerns, the belief that leave is primarily the mother's domain. The evidence runs the other way. Studies of Scandinavian "daddy quota" leave policies (weeks reserved specifically for fathers, non-transferable to the other parent) show lasting effects on father involvement, child outcomes, and gender equity in domestic labor that persist for years. For you: the weeks you take now are when the foundational habits of your caregiving identity are established. The father who does two weeks of solo caregiving in week two builds a competence and confidence baseline that fathers who were present-but-not-primary never develop. If your leave is paid and available, take it fully, deliberately, and use it to do the caregiving rather than to support the caregiving.`},
   {id:'n-029',phase:'newborn',weekRange:null,track:'Medical',
+   tags:['anxiety-content'],
    title:`The newborn hearing screen: what it means and what happens next`,
    body:`Virtually all hospitals in the US perform a newborn hearing screen before discharge — either an otoacoustic emissions (OAE) test or an automated auditory brainstem response (AABR), both non-invasive. A "refer" result (rather than "pass") does not indicate hearing loss — it indicates the test was inconclusive, which occurs in 2–10% of newborns, often due to fluid in the ear canal at birth. A refer result requires follow-up audiological testing at 1 month. Confirmed hearing loss (congenital, present in approximately 1–3 per 1,000 births) is most effectively addressed when identified early: intervention before six months is associated with significantly better language outcomes than intervention after six months, which is why the screen exists. If your baby refers, schedule the follow-up — do not wait to see if it resolves.`},
   {id:'n-030',phase:'newborn',weekRange:null,track:'Bonding',
+   tags:['first-time-parent'],
    title:`The difference between soothing and spoiling — one of them is not a thing`,
    body:`You cannot spoil a newborn. The concept of spoiling — that responding too quickly or too consistently to infant cries creates dependency or manipulative behavior — has no support in developmental research and was largely debunked by the late 1980s. Newborns are not capable of instrumental manipulation; their cries are reflexive signals of need or distress. The developmental task of the first year is not teaching self-reliance — it is building secure attachment, which happens through consistent, responsive caregiving. Bowlby's attachment theory (formalized in the 1960s–1980s) and decades of subsequent research show that securely attached infants — those whose caregivers respond reliably — actually develop greater independence and emotional regulation capacity by age 2–3 than insecurely attached infants who received inconsistent responses. Picking up your crying baby is not creating a problem. It is solving one.`},
   {id:'n-031',phase:'newborn',weekRange:null,track:'Logistics',
+   tags:['car-seat'],
    title:`The car seat install — one of the most under-audited safety steps`,
    body:`Car accidents are a leading cause of injury death in children — and the majority of car seats are installed or used incorrectly. A 2016 AAP study found that 95% of newborn car seats observed had at least one installation or use error, with 85% judged to pose a significant risk of injury. The most common errors: harness straps too loose (the "pinch test" — you should not be able to pinch excess webbing at the shoulder), chest clip positioned on the abdomen rather than at armpit level, seat not tight enough in the vehicle base (less than one inch of movement in any direction at the belt path), and seat reclined at the incorrect angle (newborns need 30–45° recline for airway protection). Many hospitals, fire stations, and child passenger safety technician programs offer free inspection appointments — use one before the first drive home. The first car ride is not the time to discover an installation problem.`},
   {id:'n-032',phase:'newborn',weekRange:null,track:'Self',
+   tags:[],
    title:`Building your support network before you need it — not after`,
    body:`Research on new father wellbeing consistently identifies social isolation as a primary risk factor for paternal depression, anxiety, and low parenting self-efficacy. Unlike mothers, who often have existing community structures around pregnancy and new parenthood (birth classes, mommy-and-me groups, breastfeeding support), fathers are rarely directed toward peer connection. The isolation compounds: sleep deprivation reduces motivation to reach out; identity disorientation makes previous friend networks feel less relevant; and the cultural expectation of paternal stoicism discourages disclosure of struggle. What actually helps: one other father who is either in the same phase or recently through it, with whom you can speak honestly about the experience. Not for advice — for normalization. You may need to build this connection deliberately rather than waiting for it to form. A text that says "new baby, losing my mind, you've been through this — can we grab coffee this week?" is not an imposition. It is exactly what that person wishes someone had asked them.`},
   // ── FIRST TRIMESTER — 20 new cards (f-018 to f-037) ──
   {id:'f-018',phase:'first',weekRange:null,track:'Emotional',
+   tags:[],
    title:`First trimester unreality: why it doesn't feel real yet`,
    body:`The experience of a pregnancy feeling unreal is well documented in intended parents but rarely named aloud. When there is no visible pregnancy, no symptoms you can feel, and the baby is growing in someone else's body, the cognitive gap between "I am going to be a father" and lived reality is enormous. Research on intended parents by Imrie and Jadva found that many IPs describe the first trimester as "like reading about someone else's pregnancy" — intellectually understood, emotionally distant. This is not detachment and does not predict weaker future bonding. It is the predictable experience of an abstract pregnancy. What tends to shift it: seeing the ultrasound image, hearing your GC describe symptoms she is experiencing, telling someone for the first time. The pregnancy becomes more real each time you say it out loud to someone who responds to it.`},
   {id:'f-019',phase:'first',weekRange:null,track:'Medical',
+   tags:[],
    title:`What your GC is taking: the early pregnancy medication protocol`,
    body:`In a frozen embryo transfer cycle, your GC began a medication protocol weeks before transfer — estrogen (often taken orally or vaginally as Estrace) to build uterine lining, followed by progesterone to support implantation and early placental development. Progesterone is most commonly delivered as progesterone in oil (PIO) — a thick intramuscular injection administered with a 1.5-inch needle into the upper outer quadrant of the buttock, typically every day. These medications continue through approximately weeks 10–12, until the placenta produces sufficient hormones on its own. Your GC has been managing this protocol for weeks. The fatigue and mood changes she experiences are partly driven by supraphysiological hormone levels, not ordinary first-trimester biology. Understanding the protocol makes you a more informed partner and helps contextualize what she is managing physically each day.`},
   {id:'f-020',phase:'first',weekRange:null,track:'Emotional',
+   tags:['announcements'],
    title:`Telling your parents they're going to be grandparents via surrogacy`,
    body:`The grandparent announcement in a surrogacy journey is its own distinct conversation — not a natural pregnancy announcement, and not the same as telling friends. Grandparents-to-be often need time to understand the genetics (is the baby biologically yours?), the legal landscape (will the birth certificate reflect you?), and what role your GC plays in your ongoing life. Research on family disclosure in surrogacy suggests the most important variable is tone: grandparents who receive news framed as "we have worked hard for this and we are bringing a healthy baby into the family" respond differently than those who receive it as "here is a complicated medical situation." Prepare for questions you may not yet be able to answer. It is appropriate to say "we are still figuring some of this out." The announcement is a relationship investment, not only an information transfer.`},
   {id:'f-021',phase:'first',weekRange:null,track:'Bonding',
+   tags:[],
    title:`Creating a weekly pregnancy ritual`,
    body:`Behavioral research on prenatal bonding in fathers finds that frequency of engagement matters more than the nature of the engagement. Intended fathers who establish regular, predictable rituals around the pregnancy — a weekly check-in call with their GC, reading a chapter of a baby book on the same day each week, listening to the heartbeat recording from the last appointment — report meaningfully stronger sense of connection to the pregnancy and to their role as a father before birth. The ritual itself is less important than its regularity. What you are building is a frame: a weekly moment that says "this is happening and I am paying attention." That frame becomes the foundation for the larger psychological shift of becoming a parent. Pick one thing that is sustainable. Do it every week without deciding whether to.`},
   {id:'f-022',phase:'first',weekRange:null,track:'Self',
+   tags:[],
    title:`The identity shift: becoming a father when no one can see it`,
    body:`The transition to parenthood is typically visible — a partner's changing body, a visible pregnancy, social rituals organized around it. For intended fathers in surrogacy, the transition is almost entirely invisible. Your life looks the same. Your body has not changed. No one at work is adjusting their assumptions about your priorities. The social scaffolding that helps most expectant parents slowly absorb the identity shift does not exist for you in the same way. Research on patrescence — the father identity transformation — identifies this visible/invisible asymmetry as one of the distinctive psychological challenges of intended fatherhood. The practical implication: you may need to create your own scaffolding. Telling people, even selectively, is part of this. The more contexts in which you exist as "a father-to-be" rather than "a person," the more real the identity becomes. Do not wait for circumstances to make it feel real. Build that reality through action.`},
   {id:'f-023',phase:'first',weekRange:null,track:'Medical',
+   tags:['anxiety-content','loss-adjacent'],
    title:`First trimester risks beyond miscarriage: ectopic and blighted ovum`,
    body:`Miscarriage is the most commonly discussed risk in early pregnancy, but intended parents should understand two additional scenarios. An ectopic pregnancy — where the embryo implants outside the uterus, most often in a fallopian tube — requires immediate medical intervention and cannot result in a live birth. In IVF-conceived pregnancies, ectopic rates are slightly elevated (roughly 2–3%) due to the transfer environment. Ectopic pregnancy is identified by transvaginal ultrasound and plateaued or falling beta hCG levels; it does not resolve on its own. A blighted ovum (anembryonic pregnancy) occurs when a gestational sac forms but no embryo develops — the sac grows, but ultrasound finds it empty. This accounts for roughly half of first trimester pregnancy losses. Both are losses, but neither is a medical emergency when identified early. If your GC's OB mentions either, ask directly: what is the timeline, what are the options, and what happens next.`},
   {id:'f-024',phase:'first',weekRange:null,track:'Emotional',
+   tags:[],
    title:`The social invisibility of intended fatherhood`,
    body:`Expectant mothers receive constant social recognition — the visible pregnancy generates a stream of acknowledgments, accommodations, and rituals. Intended fathers in surrogacy receive almost none. The pregnancy does not show on your body. Colleagues do not notice a change. Strangers do not ask when you are due. Research on IP psychosocial experience consistently identifies social invisibility as a significant contributor to the emotional disconnect many intended fathers report in the first trimester. This matters because social recognition is part of how the identity shift from person to parent occurs. Strategies that help: be more explicit than feels comfortable when telling people what you are experiencing. Join an IP community or forum. Find one person who has done this and speak with them regularly. The research on IPs who navigate the first trimester most smoothly shows a consistent pattern: they found contexts in which their experience was visible and treated as real.`},
   {id:'f-025',phase:'first',weekRange:null,track:'Self',
+   tags:[],
    title:`Your own health during the first trimester`,
    body:`The first trimester is a good time to invest in your own health — not because you have extra time, but because the next 18 months will demand a great deal from your body and nervous system. Research on new father wellbeing identifies several modifiable factors that reliably predict better postpartum outcomes: adequate sleep, regular exercise, and moderate alcohol consumption. First trimester gives you a window to establish these before the sleep-disrupted newborn period arrives. Specifically worth acting on: if you are consistently sleeping fewer than seven hours, identify what is compressing that window. If you are drinking regularly and significantly, reduce it now — alcohol disrupts sleep quality independent of quantity, and the sleep reserve you build before birth is real. If you are sedentary, starting a sustainable exercise habit now gives you a physiological and psychological buffer that postpartum sleep deprivation erodes. You cannot take care of your baby on an empty tank. Build the tank now.`},
   {id:'f-026',phase:'first',weekRange:null,track:'Bonding',
+   tags:[],
    title:`Writing your first letter to the baby`,
    body:`Expressive writing — writing that explores feelings and meaning rather than facts — has well-documented psychological benefits including reduced anxiety, improved emotional processing, and increased sense of meaning. Research on prenatal bonding in fathers suggests that letter-writing to the unborn baby is one of the more effective bonding practices available to intended parents specifically, because it creates a direct relationship with the baby in a context where physical connection is not possible. You do not need to write anything polished. Write about what you have been through to get here, what you are afraid of, what you hope for, what you imagine saying the first time you hold them. The letter does not need to be shared or kept — the act of writing it is the point. Many fathers who do this in the first trimester describe it as the moment the pregnancy became personally real rather than abstractly real.`},
   {id:'f-027',phase:'first',weekRange:null,track:'Legal',
+   tags:['doc-folder'],
    title:`Your embryo consents: what you agreed to and why it matters to understand`,
    body:`Before your IVF cycle began, you signed consent documents covering embryo disposition — what happens to unused embryos if you die or become incapacitated, if your relationship ends, if you disagree about use, or if the arrangement concludes. These documents are legally binding. Most intended parents sign them quickly during an overwhelming intake process and never review them again. The first trimester is a good time to read them. Specifically: how many embryos do you have in storage? What disposition did you select for unused embryos — donation, destruction, continued storage, or research? What did you agree to in the event of disagreement between partners? None of this is intended to create anxiety — most of it will never be relevant. But these are your assets, your decisions, and your binding commitments. Knowing what you agreed to is part of taking ownership of the journey you are in.`},
   {id:'f-028',phase:'first',weekRange:null,track:'Emotional',
+   tags:['prior-loss'],
    title:`The comparison trap: when someone else's pregnancy announcement lands hard`,
    body:`You will almost certainly encounter at least one pregnancy announcement from a friend or colleague during your first trimester that lands differently than expected — harder, more complicated, or with a mix of genuine happiness and private grief that surprises you. This is common and well documented among people who pursued fertility treatment before conceiving. Social comparison research explains the mechanism: when others achieve easily what was extremely difficult for you, the comparison is involuntary and the emotional response is often disproportionate and guilt-inducing. The most useful reframe: your reaction is not ingratitude for what you now have. It is the residue of a loss you experienced and have not fully processed. Both genuine joy in your own journey and complicated feelings at someone else's announcement can coexist at the same time. Name the reaction privately. Do not suppress it and do not perform positivity you do not feel. Most of it resolves as your own pregnancy becomes more real.`},
   {id:'f-029',phase:'first',weekRange:null,track:'Self',
+   tags:['anxiety-content'],
    title:`Financial reality in the first trimester: costs that are accelerating`,
    body:`For most surrogacy journeys, the largest expense clusters occur in two windows: the IVF and pre-transfer phase, which you have cleared, and the second and third trimester through birth, which is approaching. Medical fees and GC compensation continue monthly throughout the pregnancy. Costs that commonly surface unexpectedly in the first trimester include additional escrow contributions if the initial deposit was based on a minimum scenario, NICU cost planning if any complications have been flagged, and health insurance restructuring if the GC's plan requires modifications for the pregnancy. The practical task now: ask your agency for a line-item projection of remaining costs and compare it against your current escrow balance. Most agencies can produce this on request. Identify any gaps. If investment accounts were earmarked for IVF contingency, decide now whether a buffer exists for late-stage complications — because the moment of a third-trimester complication is the worst possible time to discover you are undercapitalized.`},
   {id:'f-030',phase:'first',weekRange:null,track:'Medical',
+   tags:[],
    title:`The first OB appointment: what to expect and what to ask`,
    body:`Your GC's first OB appointment (distinct from fertility clinic discharge) typically occurs around weeks 8–10. The visit includes a full intake history, a blood panel (CBC, blood type, Rh factor, rubella immunity, STI screening), a cervical Pap if overdue, and often a transvaginal ultrasound. Your role as an intended parent is different from a biological partner's. Most OBs are experienced with IP presence; if yours is not, a brief conversation beforehand about how you want to be introduced and what information you will receive directly is worthwhile. Questions to establish at or before this appointment: Will you receive direct communication from the OB's office, or does everything go through your GC? Is there an opportunity for you to ask questions separately? What is the after-hours on-call process? Establishing these logistics in the first trimester prevents confusion when urgency arises later in the pregnancy.`},
   {id:'f-031',phase:'first',weekRange:null,track:'Bonding',
+   tags:[],
    title:`Prenatal bonding for intended fathers: what the research says you can actually do`,
    body:`Research on prenatal father-infant bonding identifies several behaviors associated with stronger bonding before birth: attending ultrasound appointments (live or via recording), regularly talking or reading to the baby in utero (fetal auditory learning is well established after weeks 24–28, and vocalization is meaningful even earlier as a paternal practice), maintaining regular contact with your GC about fetal development, and actively preparing the physical environment. For intended parents specifically, IP research adds one additional finding: IPs who report a sense of ownership over the pregnancy — not controlling, but "this is my journey, my baby, my story" — demonstrate stronger early bonding at birth. Ownership is built through action: the more you do on behalf of this pregnancy, the more real it becomes. Do not defer to your GC or agency to lead the experience. Participate actively in it.`},
   {id:'f-032',phase:'first',weekRange:null,track:'Logistics',
+   tags:['leave-paperwork'],
    title:`Paternity leave: why the first trimester is when to start the conversation`,
    body:`Paternity leave policies in the United States vary dramatically by employer, and application processes often require more lead time than intended parents anticipate. The federal Family and Medical Leave Act provides 12 weeks of unpaid, job-protected leave for eligible employees (12 months of service, 50+ employee company, 1,250 hours worked) for the birth or legal placement of a child. Many states — including California, New York, New Jersey, and Massachusetts — provide paid leave. Many employers have supplemental paid policies. The documentation requirements for surrogacy-based leave — establishing legal parentage before leave begins — can take longer than for birth parents. Starting the conversation with HR in the first trimester, not the third, gives you time to identify what documentation you need and to resolve any ambiguity in how your employer defines "birth of a child." Surprises here are entirely avoidable with early action.`},
   {id:'f-033',phase:'first',weekRange:null,track:'Self',
+   tags:[],
    title:`Sleep and stress during the first trimester: building your baseline`,
    body:`Sleep researchers have documented a consistent pattern in new parents: those who enter the newborn period carrying chronic sleep debt adapt worse to the fragmented sleep of early parenthood than those who arrive rested. The first trimester, while often tense, is typically not yet sleep-disrupted — that comes in the third trimester and postpartum. This window is worth using deliberately. If you are consistently sleeping fewer than seven hours, reduce obligations that are compressing your sleep window. If chronic stress is disrupting your sleep — racing thoughts, early waking, trouble falling asleep — address it now rather than carrying it forward. Mindfulness practice, even ten minutes per day, has a documented effect on stress-related sleep disruption that accumulates over eight to twelve weeks. Exercise reduces cortisol. Both are more effective as established habits than emergency interventions. You are building a physiological baseline right now. Build a good one.`},
   {id:'f-034',phase:'first',weekRange:null,track:'Medical',
+   tags:[],
    title:`Couvade syndrome: the sympathetic pregnancy symptoms more common than you think`,
    body:`Couvade syndrome — also called sympathetic pregnancy — refers to the experience of physical pregnancy-like symptoms in expectant fathers who are not pregnant. Documented symptoms include nausea, weight gain, food cravings, backache, and fatigue. Estimates of prevalence range widely depending on how symptoms are defined, but multiple peer-reviewed studies confirm the phenomenon is common and real. Leading hypotheses for the mechanism include hormonal shifts (studies have found elevated prolactin and lower testosterone in expectant fathers beginning in the first trimester), psychological identification with the pregnant partner, and stress-somatization. For intended fathers, who have less physical proximity to the pregnancy and receive fewer social reinforcements of their role, couvade symptoms can feel disorienting or embarrassing. They are neither. If you are experiencing unexplained fatigue, nausea, or appetite changes during your GC's first trimester, couvade is a well-documented explanation. You are more connected to this pregnancy than your circumstances make visible.`},
   {id:'f-035',phase:'first',weekRange:null,track:'Surrogacy',
+   tags:['remote-gc'],
    title:`IP–GC contact in the first trimester: what the research says about staying connected`,
    body:`Research on IP–GC relationship quality consistently identifies communication frequency and clarity as the strongest predictors of positive outcomes for both parties — more than emotional closeness or shared values. Studies by Jadva and colleagues found that IPs and GCs who established a regular contact rhythm in the first trimester reported significantly higher relationship satisfaction through delivery. What many IPs struggle with: the first trimester can feel too early to expect updates, so intended parents often wait for the GC to initiate contact. Research suggests this is the wrong default. Your GC is managing significant physical demands; she may interpret IP silence as disinterest or distance. A proactive, low-pressure weekly check-in — not monitoring, but genuine connection — is what the strongest IP–GC relationships look like in the first trimester. Ask how she is feeling physically. Ask what she needs. Tell her what you are experiencing. This is a relationship. Invest in it now.`},
   {id:'f-036',phase:'first',weekRange:null,track:'Emotional',
+   tags:['first-time-parent'],
    title:`"I'm becoming a father": the cognitive shift research`,
    body:`Research on how men psychologically transition to fatherhood identifies a consistent obstacle: the moment when "father" shifts from a future role to a present identity. For most fathers, this does not happen at the positive test or even at birth — it happens gradually, across dozens of small moments, over the first year. But there is also evidence that the intention to make the shift — the deliberate claim of the identity — accelerates the process. In a study by Deave and Johnson on over 200 expectant fathers, one of the strongest predictors of confident early fatherhood was whether men had explicitly described themselves as "a father" to others before birth. The claim precedes the feeling. If you have been hedging — saying "we are expecting" but not "I am going to be a father" — try the more direct statement. Say it to someone. The identity does not begin at birth. It is available to you right now, and claiming it early is how it takes root.`},
   {id:'f-037',phase:'first',weekRange:null,track:'Emotional',
+   tags:['prior-loss','loss-adjacent'],
    title:`When the first trimester is harder than expected`,
    body:`The first trimester is supposed to feel like relief — and for many intended parents, it does. But a significant number describe the first trimester as harder than expected: more anxious than hopeful, still guarded rather than celebratory, waiting for the other shoe to drop. Research on IP psychological experiences post-transfer shows the most common driver of this is fertility treatment history. If you have experienced failed transfers, miscarriage, or a long path to get here, the first trimester does not erase that — it coexists with it. The brain that learned to protect itself through repeated disappointment does not turn off because a beta hCG number is good. It adapts slowly. Clinical psychologists describe this as treatment-induced cautiousness — a protective inhibition of hope that is functionally useful during uncertainty but can persist into a phase where hope is more warranted. If this describes your experience, naming it matters more than fighting it. You are not failing to appreciate what you have. You are carrying what the journey cost you. That weight is real. It also eases.`},
 ];
 
 let libViewingDateStr = null;
+
+const DAILY_QUESTIONS = [
+  // ── SITUATION QUESTIONS (asked early in preparing phase) ──
+  {id:'q-001',phase:'preparing',weekRange:null,triggeredByTag:null,
+   question:`How close are you and your GC to each other?`,
+   options:[
+    {label:`We're in the same city — we can meet up easily`,stateUpdate:{setGcDistance:'same-state'}},
+    {label:`We're in the same state but it's still a trip to see her`,stateUpdate:{setGcDistance:'same-state'}},
+    {label:`We're in different states — most of our contact is remote`,stateUpdate:{setGcDistance:'different-state'}},
+    {label:`We're far apart but we've built a real relationship anyway`,stateUpdate:{setGcDistance:'different-state'}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-002',phase:'preparing',weekRange:null,triggeredByTag:null,
+   question:`Is this your first time becoming a dad?`,
+   options:[
+    {label:`Yes — I'm going to be a first-time father`,stateUpdate:{setFirstTimeParent:true}},
+    {label:`I already have a child and I'm adding to the family`,stateUpdate:{setFirstTimeParent:false}},
+    {label:`I have stepchildren, but this will be my first biological child`,stateUpdate:{setFirstTimeParent:true}},
+    {label:`I'm the co-parent in this, and my partner has been through this before`,stateUpdate:{setFirstTimeParent:false}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-003',phase:'preparing',weekRange:null,triggeredByTag:null,
+   question:`Has your path to this point included loss or setbacks?`,
+   options:[
+    {label:`Yes — we've been through at least one failed transfer or early loss`,stateUpdate:{setPriorLoss:true}},
+    {label:`It's been a long journey with several challenges along the way`,stateUpdate:{setPriorLoss:true}},
+    {label:`We had some bumps but got here without a major loss`,stateUpdate:{setPriorLoss:false}},
+    {label:`We got here relatively smoothly, all things considered`,stateUpdate:{setPriorLoss:false}},
+    {label:`Skip / prefer not to say`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-004',phase:'preparing',weekRange:null,triggeredByTag:null,
+   question:`How do you want to approach the clinical and legal content?`,
+   options:[
+    {label:`Bring it all — I want the full medical and legal picture`,stateUpdate:{noOp:true}},
+    {label:`I want the medical context but I'm less interested in legal details`,stateUpdate:{muteTrack:'Legal'}},
+    {label:`I'd rather not dwell on risk stats and complication scenarios`,stateUpdate:{addMutedSensitivity:'anxiety-content'}},
+    {label:`I'm looking for emotional and practical guidance more than clinical depth`,stateUpdate:{noOp:true}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  // ── MILESTONE CHECK-IN QUESTIONS (triggered by card tag) ──
+  {id:'q-010',phase:'first',weekRange:null,triggeredByTag:'doc-folder',
+   question:`Where are you with organizing your journey documents?`,
+   options:[
+    {label:`I have a proper folder set up — it's organized and accessible`,stateUpdate:{addMilestone:'doc-folder'}},
+    {label:`I've saved things but it's scattered across email and paper`,stateUpdate:{noOp:true}},
+    {label:`I know it's important but I haven't gotten to it yet`,stateUpdate:{noOp:true}},
+    {label:`We have an agency or attorney handling most of the paperwork`,stateUpdate:{addMilestone:'doc-folder'}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-011',phase:'first',weekRange:null,triggeredByTag:'announcements',
+   question:`How has telling people been going?`,
+   options:[
+    {label:`We've told most people — family, close friends, it's out there`,stateUpdate:{addMilestone:'announcements'}},
+    {label:`We've told close family but we're being selective with others`,stateUpdate:{noOp:true}},
+    {label:`We're keeping it quiet for now — not many people know`,stateUpdate:{noOp:true}},
+    {label:`The surrogacy piece makes it complicated and I'm still figuring out how to talk about it`,stateUpdate:{noOp:true}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-012',phase:'first',weekRange:null,triggeredByTag:'insurance',
+   question:`How sorted is the health insurance side of things?`,
+   options:[
+    {label:`Confirmed — I know the baby will be covered from day one`,stateUpdate:{addMilestone:'insurance'}},
+    {label:`I've looked into it and have a plan but there are details to resolve`,stateUpdate:{noOp:true}},
+    {label:`I know I need to address this but haven't dug in yet`,stateUpdate:{noOp:true}},
+    {label:`Insurance is being handled by our agency or attorney`,stateUpdate:{addMilestone:'insurance'}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-013',phase:'first',weekRange:null,triggeredByTag:'leave-paperwork',
+   question:`Where are you on paternity leave?`,
+   options:[
+    {label:`Filed or all set — I know exactly what I'm taking and when`,stateUpdate:{addMilestone:'leave-paperwork'}},
+    {label:`I've had the conversation with HR but haven't filed the paperwork yet`,stateUpdate:{noOp:true}},
+    {label:`I know what I'm entitled to but haven't started the process`,stateUpdate:{noOp:true}},
+    {label:`I'm self-employed or my situation makes this more complicated`,stateUpdate:{noOp:true}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-014',phase:'second',weekRange:null,triggeredByTag:'pediatrician',
+   question:`Where are you in the pediatrician search?`,
+   options:[
+    {label:`We've chosen a pediatrician and done the prenatal consultation`,stateUpdate:{addMilestone:'pediatrician'}},
+    {label:`I've interviewed a couple of practices and I'm close to deciding`,stateUpdate:{noOp:true}},
+    {label:`It's on my list but I haven't started the search yet`,stateUpdate:{noOp:true}},
+    {label:`Our area has limited options so this feels more like a logistics problem than a search`,stateUpdate:{noOp:true}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-015',phase:'second',weekRange:null,triggeredByTag:'daycare',
+   question:`What's your childcare situation looking like?`,
+   options:[
+    {label:`We have a plan — on waitlists, signed a contract, or have family help arranged`,stateUpdate:{addMilestone:'daycare'}},
+    {label:`We've researched options and have a strong candidate but nothing locked in`,stateUpdate:{noOp:true}},
+    {label:`We know we need to figure this out but haven't really started`,stateUpdate:{noOp:true}},
+    {label:`We're planning to use a nanny or family member and daycare isn't really the question`,stateUpdate:{addMilestone:'daycare'}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-016',phase:'second',weekRange:null,triggeredByTag:'cord-blood',
+   question:`Have you worked through the cord blood banking question?`,
+   options:[
+    {label:`Yes — we made a decision and I know what we're doing`,stateUpdate:{addMilestone:'cord-blood'}},
+    {label:`I've read about it but I'm still going back and forth`,stateUpdate:{noOp:true}},
+    {label:`I know it's a decision I need to make but haven't looked into it yet`,stateUpdate:{noOp:true}},
+    {label:`We talked to the OB and were advised it wasn't a priority for our situation`,stateUpdate:{addMilestone:'cord-blood'}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-017',phase:'third',weekRange:null,triggeredByTag:'hospital-tour',
+   question:`Have you seen the hospital or birth center where your GC will deliver?`,
+   options:[
+    {label:`Yes — we toured, I know the layout, and I understand what to expect as an IP`,stateUpdate:{addMilestone:'hospital-tour'}},
+    {label:`I've been to the hospital for an appointment but haven't done a formal tour`,stateUpdate:{noOp:true}},
+    {label:`I know where it is and have a plan to go, but haven't been yet`,stateUpdate:{noOp:true}},
+    {label:`I'm not sure I'll be welcome in the room and haven't sorted out the protocol yet`,stateUpdate:{noOp:true}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-018',phase:'third',weekRange:null,triggeredByTag:'infant-cpr',
+   question:`Have you done an infant CPR class?`,
+   options:[
+    {label:`Done — I'm certified and I feel prepared`,stateUpdate:{addMilestone:'infant-cpr'}},
+    {label:`I've done it in the past for a previous child and I'm comfortable`,stateUpdate:{addMilestone:'infant-cpr'}},
+    {label:`It's booked or on my near-term schedule`,stateUpdate:{noOp:true}},
+    {label:`It's on my list but I haven't scheduled it yet`,stateUpdate:{noOp:true}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-019',phase:'third',weekRange:null,triggeredByTag:'car-seat',
+   question:`What's the status on the car seat?`,
+   options:[
+    {label:`Installed and inspected by a certified technician — checked off`,stateUpdate:{addMilestone:'car-seat'}},
+    {label:`Installed, but I haven't had a technician inspect it yet`,stateUpdate:{noOp:true}},
+    {label:`We've bought one but haven't installed it yet`,stateUpdate:{noOp:true}},
+    {label:`Still researching which model to get`,stateUpdate:{noOp:true}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-020',phase:'third',weekRange:null,triggeredByTag:'nursery',
+   question:`How's the nursery coming along?`,
+   options:[
+    {label:`It's done — set up, stocked, and ready`,stateUpdate:{addMilestone:'nursery'}},
+    {label:`The furniture is in and the basics are set, still working on details`,stateUpdate:{noOp:true}},
+    {label:`We've started but there's still a lot to do`,stateUpdate:{noOp:true}},
+    {label:`We're waiting until closer to the birth to set it up`,stateUpdate:{noOp:true}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+];
+
+function applyQuestionAnswer(qId, stateUpdate) {
+  if (!state.questionLog) state.questionLog = {};
+  if (stateUpdate.skipQuestion) {
+    // Record skip with today's date so it can re-appear tomorrow
+    state.questionLog[qId] = {skipped: todayStr()};
+  } else {
+    state.questionLog[qId] = {answered: todayStr(), update: stateUpdate};
+    // Apply state changes
+    if (stateUpdate.addMilestone) {
+      state.completedMilestones = [...(state.completedMilestones || []), stateUpdate.addMilestone];
+    }
+    if (stateUpdate.setGcDistance) {
+      state.settings.gcDistance = stateUpdate.setGcDistance;
+    }
+    if (stateUpdate.setPriorLoss !== undefined) {
+      state.settings.priorLoss = stateUpdate.setPriorLoss;
+    }
+    if (stateUpdate.setFirstTimeParent !== undefined) {
+      state.settings.isFirstTimeParent = stateUpdate.setFirstTimeParent;
+    }
+    if (stateUpdate.muteTrack) {
+      state.mutedTracks = [...(state.mutedTracks || []), stateUpdate.muteTrack];
+    }
+    if (stateUpdate.addMutedSensitivity) {
+      state.mutedSensitivity = [...(state.mutedSensitivity || []), stateUpdate.addMutedSensitivity];
+    }
+  }
+  save();
+  renderDailyQuestion();
+  renderHomeCard(); // re-draw today's card if pool changed
+}
+
+function getNextQuestion() {
+  const phase = getCurrentLibPhase();
+  const log = state.questionLog || {};
+  const today = todayStr();
+  const week = getGestationalWeek();
+  const lastCardId = state.dailyCardLog && state.dailyCardLog[today];
+  const lastCard = lastCardId ? LIBRARY_CARDS.find(c => c.id === lastCardId) : null;
+  const lastCardTags = (lastCard && lastCard.tags) || [];
+
+  const candidates = DAILY_QUESTIONS.filter(q => {
+    const entry = log[q.id];
+    // Already answered (not skipped) — never show again
+    if (entry && entry.answered) return false;
+    // Skipped today — don't show again today
+    if (entry && entry.skipped === today) return false;
+    // Phase match
+    if (q.phase !== phase && q.phase !== 'any') return false;
+    // Week range check
+    if (q.weekRange && week !== null) {
+      if (week < q.weekRange[0] || week > q.weekRange[1]) return false;
+    }
+    return true;
+  });
+
+  // Prioritize: triggered by today's card tag
+  const triggered = candidates.filter(q => q.triggeredByTag && lastCardTags.includes(q.triggeredByTag));
+  return triggered[0] || candidates[0] || null;
+}
+
+function renderDailyQuestion() {
+  const wrap = document.getElementById('home-question-wrap');
+  if (!wrap) return;
+  const q = getNextQuestion();
+  if (!q) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `<div class="daily-question">
+    <div class="q-label">Quick check-in</div>
+    <div class="q-text">${q.question}</div>
+    <div class="q-options">
+      ${q.options.map((opt, i) => `<button class="q-option-btn${i === q.options.length - 1 ? ' skip-btn' : ''}" onclick="applyQuestionAnswer('${q.id}', ${JSON.stringify(opt.stateUpdate)})">${opt.label}</button>`).join('')}
+    </div>
+  </div>`;
+}
 
 function getCurrentLibPhase() {
   const s = state.settings || {};
@@ -3309,8 +3708,55 @@ function getGestationalWeek() {
 }
 
 function getPhasePool(phase) {
-  const pool=LIBRARY_CARDS.filter(c=>c.phase===phase);
-  if(!isSurrogacyPath(state.settings.familyPath)){return pool.filter(c=>c.track!=='Surrogacy');}
+  let pool = LIBRARY_CARDS.filter(c => c.phase === phase);
+
+  // Surrogacy-track gate (existing)
+  if (!isSurrogacyPath(state.settings.familyPath)) {
+    pool = pool.filter(c => c.track !== 'Surrogacy');
+  }
+
+  // Muted tracks (user opted out of full track)
+  const mutedTracks = state.mutedTracks || [];
+  if (mutedTracks.length) {
+    const f = pool.filter(c => !mutedTracks.includes(c.track));
+    if (f.length > 0) pool = f;
+  }
+
+  // Muted sensitivity tags
+  const mutedSens = state.mutedSensitivity || [];
+  if (mutedSens.length) {
+    const f = pool.filter(c => !(c.tags || []).some(t => mutedSens.includes(t)));
+    if (f.length > 0) pool = f;
+  }
+
+  // Completed milestones — suppress cards whose milestone tags are all done
+  const done = state.completedMilestones || [];
+  if (done.length) {
+    const f = pool.filter(c => {
+      const milTags = (c.tags || []).filter(t => MILESTONE_TAGS.includes(t));
+      if (!milTags.length) return true;
+      return !milTags.every(t => done.includes(t));
+    });
+    if (f.length > 0) pool = f;
+  }
+
+  // GC distance situation filter
+  const gcDist = state.settings && state.settings.gcDistance;
+  if (gcDist === 'same-state') {
+    const f = pool.filter(c => !(c.tags || []).includes('remote-gc'));
+    if (f.length > 0) pool = f;
+  }
+  if (gcDist === 'different-state') {
+    const f = pool.filter(c => !(c.tags || []).includes('same-state-gc'));
+    if (f.length > 0) pool = f;
+  }
+
+  // First-time parent filter
+  if (state.settings && state.settings.isFirstTimeParent === false) {
+    const f = pool.filter(c => !(c.tags || []).includes('first-time-parent'));
+    if (f.length > 0) pool = f;
+  }
+
   return pool;
 }
 
@@ -3438,6 +3884,7 @@ function renderHomeCard() {
   }
   renderNudge();
   renderLibHomeProgress();
+  renderDailyQuestion();
 }
 
 
@@ -3724,7 +4171,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v3.9.2'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v3.9.3'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
