@@ -946,7 +946,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v3.9.3 · cloud sync</span>
+      <span class="brand-meta">v4.0 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1299,7 +1299,6 @@
         <select class="settings-select" id="s-path" onchange="toggleGCField(this.value)">
           <option value="gestational-surrogacy">Gestational surrogacy</option>
           <option value="traditional-surrogacy">Traditional surrogacy</option>
-          <option value="adoption">Adoption</option>
           <option value="ivf">IVF</option>
           <option value="natural">Natural conception</option>
         </select>
@@ -1737,7 +1736,7 @@ let state = {
     currentPhase:'pre-transfer',
     gcName:'',
     transferDateStr:'',
-    gcDistance:null, priorLoss:null, isFirstTimeParent:null
+    gcDistance:null, priorLoss:null, isFirstTimeParent:null, isPartnered:null
   },
   snapshots:[]
 };
@@ -1748,7 +1747,7 @@ function deleteItem(type,id){const b=BUCKET[type];if(!b)return;const idx=(state.
 
 function seedIfEmpty(){
   const raw=localStorage.getItem(STORAGE_KEY);
-  if(raw){try{const p=JSON.parse(raw);if(p.tasks&&p.tasks.length>0){state.tasks=p.tasks;state.myStuff=p.myStuff||{links:[],contacts:[],documents:[]};['links','contacts','documents'].forEach(k=>{if(!state.myStuff[k])state.myStuff[k]=[];});state.tasks.forEach(t=>{if(!t.attachments)t.attachments=[];if(t.dueDate===undefined)t.dueDate='';});state.thisWeek=new Set(p.thisWeek||[]);state.budget=p.budget||{};state.shopping=p.shopping||{};state.budgetCustomItems=p.budgetCustomItems||[];state.journal=p.journal||[];state.xp=p.xp||0;state.streak=p.streak||0;state.lastCheckinDate=p.lastCheckinDate||'';state.readCardIds=p.readCardIds||[];state.dailyCardLog=p.dailyCardLog||{};state.hospitalBag=p.hospitalBag||initHospitalBag();state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',gcName:'',transferDateStr:'',gcDistance:null,priorLoss:null,isFirstTimeParent:null},p.settings||{});state.completedMilestones=p.completedMilestones||[];state.mutedTracks=p.mutedTracks||[];state.mutedSensitivity=p.mutedSensitivity||[];state.questionLog=p.questionLog||{};initBudgetState();return;}}catch{}}
+  if(raw){try{const p=JSON.parse(raw);if(p.tasks&&p.tasks.length>0){state.tasks=p.tasks;state.myStuff=p.myStuff||{links:[],contacts:[],documents:[]};['links','contacts','documents'].forEach(k=>{if(!state.myStuff[k])state.myStuff[k]=[];});state.tasks.forEach(t=>{if(!t.attachments)t.attachments=[];if(t.dueDate===undefined)t.dueDate='';});state.thisWeek=new Set(p.thisWeek||[]);state.budget=p.budget||{};state.shopping=p.shopping||{};state.budgetCustomItems=p.budgetCustomItems||[];state.journal=p.journal||[];state.xp=p.xp||0;state.streak=p.streak||0;state.lastCheckinDate=p.lastCheckinDate||'';state.readCardIds=p.readCardIds||[];state.dailyCardLog=p.dailyCardLog||{};state.hospitalBag=p.hospitalBag||initHospitalBag();state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',gcName:'',transferDateStr:'',gcDistance:null,priorLoss:null,isFirstTimeParent:null,isPartnered:null},p.settings||{});if(state.settings.familyPath==='adoption')state.settings.familyPath='ivf';state.completedMilestones=p.completedMilestones||[];state.mutedTracks=p.mutedTracks||[];state.mutedSensitivity=p.mutedSensitivity||[];state.questionLog=p.questionLog||{};initBudgetState();return;}}catch{}}
   const legacyRaw=localStorage.getItem(LEGACY_KEY_V22);
   if(legacyRaw){try{const legacy=JSON.parse(legacyRaw);if(legacy.tasks&&legacy.tasks.length>0){state.tasks=legacy.tasks.map(t=>({...t,attachments:[]}));legacy.tasks.forEach((lt,ti)=>{(lt.attachments||[]).forEach(a=>{if(!a||!a.type)return;if(a.type==='file'){a.type='document';a.label=a.name||a.label||'Untitled';a.url=a.url||'';}if(a.type==='link'){const item=createItem('link',{label:a.label||'Untitled link',url:a.url||''});state.tasks[ti].attachments.push({type:'link',id:item.id});}else if(a.type==='document'){const item=createItem('document',{label:a.label||'Untitled document',url:a.url||''});state.tasks[ti].attachments.push({type:'document',id:item.id});}else if(a.type==='contact'){const item=createItem('contact',{name:a.name||'Untitled',role:a.role||'',phone:a.phone||'',email:a.email||'',note:a.note||''});state.tasks[ti].attachments.push({type:'contact',id:item.id});}});});state.phaseCollapsed=legacy.phaseCollapsed?new Set(legacy.phaseCollapsed):new Set(PHASES.map(p=>p.id).filter(id=>id!==getCurrentPhase()));save();return;}}catch{}}
   state.tasks=SEED_TASKS.map(t=>({id:uid(),title:t.title,notes:'',cat:t.cat,tags:t.tags.slice(),phase:t.phase,pinned:false,status:'open',steps:[],attachments:[],dueDate:'',createdBy:'seed'}));
@@ -2231,13 +2230,6 @@ const JOURNEY_CATS = {
     {id:'s-ivf',name:'IUI / IVF procedure',committed:false,range:{lo:3000,hi:15000},note:"Depends on method; IUI is simpler than IVF"},
     {id:'s-escrow',name:'Escrow management',committed:false,range:{lo:1000,hi:3000},note:"Professional third-party escrow management fees"},
   ],
-  'adoption': [
-    {id:'s-agency',name:'Agency / attorney fees',committed:true,range:{lo:20000,hi:45000},note:"Domestic infant adoption; international varies widely"},
-    {id:'s-homestudy',name:'Home study',committed:true,range:{lo:1500,hi:5000},note:"Required for all adoptions; includes interviews, background checks, home visit"},
-    {id:'s-legal',name:'Legal fees',committed:true,range:{lo:3000,hi:10000},note:"Finalization, court fees, legal representation"},
-    {id:'s-travel',name:'Travel + lodging',committed:false,range:{lo:2000,hi:10000},note:"Trips to birth state or country; varies widely"},
-    {id:'s-birthfam',name:'Birth family expenses',committed:false,range:{lo:3000,hi:8000},note:"Medical, living, counseling expenses during pregnancy — varies by state law"},
-  ],
   'ivf': [
     {id:'s-retrieval',name:'Egg retrieval cycle',committed:true,range:{lo:10000,hi:20000},note:"Includes monitoring, retrieval, anesthesia — before meds"},
     {id:'s-meds',name:'Fertility medications',committed:true,range:{lo:3000,hi:7000},note:"Stimulation protocol varies significantly by response"},
@@ -2256,7 +2248,7 @@ function getJourneyCats(){
   return JOURNEY_CATS[path]||JOURNEY_CATS['gestational-surrogacy'];
 }
 function getJourneyLabel(){
-  const labels={'gestational-surrogacy':'Surrogacy costs','traditional-surrogacy':'Surrogacy costs','adoption':'Adoption costs','ivf':'IVF costs','natural':''};
+  const labels={'gestational-surrogacy':'Surrogacy costs','traditional-surrogacy':'Surrogacy costs','ivf':'IVF costs','natural':''};
   const path=(state.settings||{}).familyPath||'gestational-surrogacy';
   return labels[path]||'Journey costs';
 }
@@ -3506,7 +3498,14 @@ const DAILY_QUESTIONS = [
     {label:`Bring it all — I want the full medical and legal picture`,stateUpdate:{noOp:true}},
     {label:`I want the medical context but I'm less interested in legal details`,stateUpdate:{muteTrack:'Legal'}},
     {label:`I'd rather not dwell on risk stats and complication scenarios`,stateUpdate:{addMutedSensitivity:'anxiety-content'}},
-    {label:`I'm looking for emotional and practical guidance more than clinical depth`,stateUpdate:{noOp:true}},
+    {label:`I'm looking for emotional and practical guidance more than clinical depth`,stateUpdate:{muteTrack:'Legal',addMutedSensitivity:'anxiety-content'}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
+  {id:'q-005',phase:'preparing',weekRange:null,triggeredByTag:null,
+   question:`Are you on this journey with a partner?`,
+   options:[
+    {label:`Yes — I have a partner who's in this with me`,stateUpdate:{setIsPartnered:true}},
+    {label:`I'm doing this as a solo intended parent`,stateUpdate:{setIsPartnered:false}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
   // ── MILESTONE CHECK-IN QUESTIONS (triggered by card tag) ──
@@ -3637,6 +3636,9 @@ function applyQuestionAnswer(qId, stateUpdate) {
     if (stateUpdate.addMutedSensitivity) {
       state.mutedSensitivity = [...(state.mutedSensitivity || []), stateUpdate.addMutedSensitivity];
     }
+    if (stateUpdate.setIsPartnered !== undefined) {
+      state.settings.isPartnered = stateUpdate.setIsPartnered;
+    }
   }
   save();
   renderDailyQuestion();
@@ -3754,6 +3756,21 @@ function getPhasePool(phase) {
   // First-time parent filter
   if (state.settings && state.settings.isFirstTimeParent === false) {
     const f = pool.filter(c => !(c.tags || []).includes('first-time-parent'));
+    if (f.length > 0) pool = f;
+  }
+
+  // Prior loss — suppress content written for loss survivors when user had a smooth journey
+  if (state.settings && state.settings.priorLoss === false) {
+    const f = pool.filter(c => !(c.tags || []).includes('prior-loss'));
+    if (f.length > 0) pool = f;
+  }
+
+  // Solo IP — suppress partner-relationship cards when no partner
+  const isPartnered = (state.settings && state.settings.isPartnered !== null)
+    ? state.settings.isPartnered
+    : !!(state.settings && state.settings.partnerName);
+  if (isPartnered === false) {
+    const f = pool.filter(c => !(c.tags || []).includes('has-partner'));
     if (f.length > 0) pool = f;
   }
 
@@ -4171,7 +4188,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v3.9.3'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.0'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -4594,7 +4611,6 @@ function initHospitalBag(path) {
       {id:'doc4',text:`Pediatrician name, practice, and direct phone number`,packed:false,custom:false},
       {id:'doc5',text:`Hospital pre-registration confirmation`,packed:false,custom:false},
       {id:'doc6',text:`Cord blood banking decision (if applicable)`,packed:false,custom:false},
-      ...(path==='adoption'?[{id:'doc7',text:`Adoption agency letter or finalization paperwork`,packed:false,custom:false}]:[]),
     ]
   };
 }
@@ -4709,9 +4725,9 @@ function renderOnboardingStep() {
   const dots = obStep > 1
     ? `<div class="ob-dots">${Array.from({length:OB_TOTAL},(_,i)=>`<div class="ob-dot${i+1<obStep?' done':i+1===obStep?' active':''}"></div>`).join('')}</div>`
     : '';
-  const pathLabels = {'gestational-surrogacy':'Gestational surrogacy','traditional-surrogacy':'Traditional surrogacy','adoption':'Adoption','ivf':'IVF','natural':'Natural pregnancy'};
-  const pathDescs = {'gestational-surrogacy':'GC carries your embryo','traditional-surrogacy':'GC also provides the egg','adoption':'Domestic or international','ivf':'Partner carries','natural':'No intervention'};
-  const pathOptions = ['gestational-surrogacy','traditional-surrogacy','adoption','ivf','natural'].map(p =>
+  const pathLabels = {'gestational-surrogacy':'Gestational surrogacy','traditional-surrogacy':'Traditional surrogacy','ivf':'IVF','natural':'Natural pregnancy'};
+  const pathDescs = {'gestational-surrogacy':'GC carries your embryo','traditional-surrogacy':'GC also provides the egg','ivf':'Partner carries','natural':'No intervention'};
+  const pathOptions = ['gestational-surrogacy','traditional-surrogacy','ivf','natural'].map(p =>
     `<div class="ob-path-card${p===obPath?' selected':''}" onclick="selectObPath('${p}')"><div class="ob-path-label">${pathLabels[p]}</div><div class="ob-path-desc">${pathDescs[p]}</div></div>`
   ).join('');
   const showTransfer = isSurrogacyPath(obPath) || obPath === 'ivf';
