@@ -9,8 +9,11 @@ __pycache__/
 .DS_Store
 # HTML source files contain baked-in Supabase credentials — never commit
 daddy-duty-v*.html
+# Reference / spec docs — dev tools, not part of deployed artifact
 daddy-duty-card-reference.html
 daddy-duty-task-reference.html
+daddy-duty-question-reference.html
+daddy-duty-card-system-spec.html
 # Old deploy folder (replaced by docs/)
 dist/
 # Local Netlify config
