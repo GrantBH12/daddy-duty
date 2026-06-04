@@ -1002,7 +1002,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v4.11 · cloud sync</span>
+      <span class="brand-meta">v4.12 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1427,6 +1427,14 @@
           <button onclick="setProfileField('isPartnered',false)">No, solo IP</button>
         </div>
       </div>
+      <div class="settings-situation-field">
+        <div class="settings-situation-label">Planning to attend the birth?</div>
+        <div class="settings-btn-group" id="s-birth-attend">
+          <button onclick="setProfileField('birthAttendance','in-room')">In the room</button>
+          <button onclick="setProfileField('birthAttendance','at-hospital')">At the hospital</button>
+          <button onclick="setProfileField('birthAttendance','not-attending')">Won't be present</button>
+        </div>
+      </div>
       <div class="settings-situation-field" style="margin-bottom:0;">
         <div class="settings-situation-label">Content preferences</div>
         <div class="settings-btn-group" id="s-content-legal">
@@ -1848,7 +1856,7 @@ let state = {
     currentPhase:'pre-transfer',
     gcName:'',
     transferDateStr:'',
-    gcDistance:null, priorLoss:null, isFirstTimeParent:null, isPartnered:null
+    gcDistance:null, priorLoss:null, isFirstTimeParent:null, isPartnered:null, birthAttendance:null
   },
   snapshots:[]
 };
@@ -1859,7 +1867,7 @@ function deleteItem(type,id){const b=BUCKET[type];if(!b)return;const idx=(state.
 
 function seedIfEmpty(){
   const raw=localStorage.getItem(STORAGE_KEY);
-  if(raw){try{const p=JSON.parse(raw);if(p.tasks&&p.tasks.length>0){state.tasks=p.tasks;state.myStuff=p.myStuff||{links:[],contacts:[],documents:[]};['links','contacts','documents'].forEach(k=>{if(!state.myStuff[k])state.myStuff[k]=[];});state.tasks.forEach(t=>{if(!t.attachments)t.attachments=[];if(t.dueDate===undefined)t.dueDate='';});state.thisWeek=new Set(p.thisWeek||[]);state.budget=p.budget||{};state.shopping=p.shopping||{};state.budgetCustomItems=p.budgetCustomItems||[];state.journal=p.journal||[];state.xp=p.xp||0;state.streak=p.streak||0;state.lastCheckinDate=p.lastCheckinDate||'';state.readCardIds=p.readCardIds||[];state.dailyCardLog=p.dailyCardLog||{};state.hospitalBag=p.hospitalBag||initHospitalBag();state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',gcName:'',transferDateStr:'',gcDistance:null,priorLoss:null,isFirstTimeParent:null,isPartnered:null},p.settings||{});if(state.settings.familyPath==='adoption')state.settings.familyPath='ivf';state.completedMilestones=p.completedMilestones||[];state.mutedTracks=p.mutedTracks||[];state.mutedSensitivity=p.mutedSensitivity||[];state.questionLog=p.questionLog||{};initBudgetState();return;}}catch{}}
+  if(raw){try{const p=JSON.parse(raw);if(p.tasks&&p.tasks.length>0){state.tasks=p.tasks;state.myStuff=p.myStuff||{links:[],contacts:[],documents:[]};['links','contacts','documents'].forEach(k=>{if(!state.myStuff[k])state.myStuff[k]=[];});state.tasks.forEach(t=>{if(!t.attachments)t.attachments=[];if(t.dueDate===undefined)t.dueDate='';});state.thisWeek=new Set(p.thisWeek||[]);state.budget=p.budget||{};state.shopping=p.shopping||{};state.budgetCustomItems=p.budgetCustomItems||[];state.journal=p.journal||[];state.xp=p.xp||0;state.streak=p.streak||0;state.lastCheckinDate=p.lastCheckinDate||'';state.readCardIds=p.readCardIds||[];state.dailyCardLog=p.dailyCardLog||{};state.hospitalBag=p.hospitalBag||initHospitalBag();state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',gcName:'',transferDateStr:'',gcDistance:null,priorLoss:null,isFirstTimeParent:null,isPartnered:null,birthAttendance:null},p.settings||{});if(state.settings.familyPath==='adoption')state.settings.familyPath='ivf';state.completedMilestones=p.completedMilestones||[];state.mutedTracks=p.mutedTracks||[];state.mutedSensitivity=p.mutedSensitivity||[];state.questionLog=p.questionLog||{};initBudgetState();return;}}catch{}}
   const legacyRaw=localStorage.getItem(LEGACY_KEY_V22);
   if(legacyRaw){try{const legacy=JSON.parse(legacyRaw);if(legacy.tasks&&legacy.tasks.length>0){state.tasks=legacy.tasks.map(t=>({...t,attachments:[]}));legacy.tasks.forEach((lt,ti)=>{(lt.attachments||[]).forEach(a=>{if(!a||!a.type)return;if(a.type==='file'){a.type='document';a.label=a.name||a.label||'Untitled';a.url=a.url||'';}if(a.type==='link'){const item=createItem('link',{label:a.label||'Untitled link',url:a.url||''});state.tasks[ti].attachments.push({type:'link',id:item.id});}else if(a.type==='document'){const item=createItem('document',{label:a.label||'Untitled document',url:a.url||''});state.tasks[ti].attachments.push({type:'document',id:item.id});}else if(a.type==='contact'){const item=createItem('contact',{name:a.name||'Untitled',role:a.role||'',phone:a.phone||'',email:a.email||'',note:a.note||''});state.tasks[ti].attachments.push({type:'contact',id:item.id});}});});state.phaseCollapsed=legacy.phaseCollapsed?new Set(legacy.phaseCollapsed):new Set(PHASES.map(p=>p.id).filter(id=>id!==getCurrentPhase()));save();return;}}catch{}}
   state.tasks=SEED_TASKS.map(t=>({id:uid(),title:t.title,notes:'',cat:t.cat,tags:t.tags.slice(),phase:t.phase,pinned:false,status:'open',steps:[],attachments:[],dueDate:'',createdBy:'seed'}));
@@ -3178,7 +3186,7 @@ const LIBRARY_CARDS = [
    title:`Preeclampsia: what to know and what to watch for`,
    body:`Preeclampsia is a pregnancy complication characterized by high blood pressure and organ involvement — most commonly detected in the third trimester. It affects roughly 5-8% of pregnancies and is one of the conditions that increased monitoring after week 28 is designed to catch early. Signs your GC's OB will watch for: sustained elevated blood pressure, protein in the urine, significant swelling (particularly face and hands), severe headaches, and upper abdominal pain. In severe cases, delivery is the treatment, even if early. As an intended parent, you don't manage this medically — your GC's OB does. What you can do: know the signs so you can support your GC in taking symptoms seriously, and maintain an open line of communication with your agency if anything is flagged.`},
   {id:'t-007',phase:'third',weekRange:[32,40],track:'Medical',
-   tags:['anxiety-content'],
+   tags:['anxiety-content','birth-attendance-ip'],
    title:`C-section likelihood — and what it means for you at delivery`,
    body:`Roughly one in three births in the United States is by cesarean section. The rate is higher in certain situations: breech position, multiple gestation, prior C-section, fetal distress, or placenta previa. If your GC has a planned or emergency C-section, the delivery experience differs significantly: an operating room rather than a labor room, a larger medical team, limited space for observers, and a faster transition from birth to recovery. Ask your GC's OB in advance what the hospital's policy is on intended parent presence during a C-section. In many hospitals, one support person is permitted in the OR — confirm that can be you. Skin-to-skin in the OR is possible in many cases; ask explicitly.`},
   {id:'t-008',phase:'third',weekRange:[34,39],track:'Logistics',
@@ -3318,7 +3326,7 @@ const LIBRARY_CARDS = [
    title:`Paternal prenatal depression: real, common, and underdiagnosed`,
    body:`A 2010 meta-analysis in JAMA found that 10.4% of fathers experience depression during the prenatal and early postpartum period — a rate comparable to maternal perinatal depression but diagnosed at a fraction of the rate. Risk factors include a personal history of depression, relationship conflict, financial stress, fertility journey trauma, and low social support — all elevated in surrogacy-path families. Symptoms in fathers often look different than in mothers: irritability, social withdrawal, overwork, and substance use rather than classic low mood. A validated screening tool (the PHQ-9) takes three minutes online. If your score is elevated, bring it to your primary care physician. This is treatable, and earlier is better.`},
   {id:'s-003',phase:'second',weekRange:null,track:'Logistics',
-   tags:[],
+   tags:['support-network'],
    title:`Building your village: the conversation most people don't have`,
    body:`Research on new parent outcomes consistently identifies social support as one of the strongest protective factors against postpartum depression, relationship strain, and early parenting stress. The catch: support doesn't arrive automatically — it requires explicitly asking. Most first-time parents significantly overestimate how much help will materialize on its own. The conversations worth having now: who will bring meals for the first two weeks? Who can you call at 2am? Who can take the baby for three hours so you can sleep? Specific requests get specific commitments. Vague "let me know if you need anything" offers rarely convert. Make a list of the people in your life, what they're capable of, and what you'll actually ask them for.`},
   {id:'s-004',phase:'second',weekRange:null,track:'Bonding',
@@ -3366,7 +3374,7 @@ const LIBRARY_CARDS = [
    title:`Glucose screening and gestational diabetes: what it means if your GC's results are elevated`,
    body:`The glucose challenge test (GCT), typically administered at 24–28 weeks, screens for gestational diabetes mellitus (GDM), which affects approximately 6–9% of pregnancies. A GCT result above 140 mg/dL triggers the three-hour glucose tolerance test (GTT) for confirmation; a positive GTT diagnoses GDM. GDM is managed via diet modification, sometimes insulin or oral medication, and increased monitoring — including more frequent ultrasounds and non-stress tests in the third trimester. For intended parents: GDM is a manageable condition that, well-controlled, does not significantly increase adverse outcomes. Poorly controlled GDM is associated with macrosomia (large baby), which affects delivery planning. If your GC is diagnosed with GDM, the practical implications include: her diet restrictions are real and accommodation matters (adjust shared meals or food gifts accordingly), third-trimester monitoring will increase, and early delivery induction may be discussed if glucose control is difficult.`},
   {id:'s-015',phase:'second',weekRange:null,track:'Logistics',
-   tags:[],
+   tags:['birth-attendance-ip'],
    title:`Hospital bag checklist: what to pack for yourself when your GC is the patient`,
    body:`Standard hospital bag lists are written for the birthing parent. As an intended parent, your bag needs are different — you are attending as a support person and as the baby's primary caregiver from discharge. For yourself: a change of clothes for each expected hospital day, phone charger (long cable — hospital outlets are always inconveniently placed), snacks (the cafeteria is not always accessible at 3am), insurance cards and ID, printed copy of the pre-birth order, NICU-ready documentation if there is any preterm risk. For the baby: going-home outfit, car seat (must be installed and inspected before you leave for the hospital), one sleeper per expected hospital day, feeding supplies appropriate to your feeding plan. Practical notes: pack your bag at week 36, not week 38 — second trimester is when you create the list, not necessarily when you pack, but having the list finalized removes a cognitive task from the third-trimester crunch.`},
   {id:'s-016',phase:'second',weekRange:null,track:'Emotional',
@@ -3499,7 +3507,7 @@ const LIBRARY_CARDS = [
    title:`The car seat install — one of the most under-audited safety steps`,
    body:`Car accidents are a leading cause of injury death in children — and the majority of car seats are installed or used incorrectly. A 2016 AAP study found that 95% of newborn car seats observed had at least one installation or use error, with 85% judged to pose a significant risk of injury. The most common errors: harness straps too loose (the "pinch test" — you should not be able to pinch excess webbing at the shoulder), chest clip positioned on the abdomen rather than at armpit level, seat not tight enough in the vehicle base (less than one inch of movement in any direction at the belt path), and seat reclined at the incorrect angle (newborns need 30–45° recline for airway protection). Many hospitals, fire stations, and child passenger safety technician programs offer free inspection appointments — use one before the first drive home. The first car ride is not the time to discover an installation problem.`},
   {id:'n-032',phase:'newborn',weekRange:null,track:'Self',
-   tags:[],
+   tags:['support-network'],
    title:`Building your support network before you need it — not after`,
    body:`Research on new father wellbeing consistently identifies social isolation as a primary risk factor for paternal depression, anxiety, and low parenting self-efficacy. Unlike mothers, who often have existing community structures around pregnancy and new parenthood (birth classes, mommy-and-me groups, breastfeeding support), fathers are rarely directed toward peer connection. The isolation compounds: sleep deprivation reduces motivation to reach out; identity disorientation makes previous friend networks feel less relevant; and the cultural expectation of paternal stoicism discourages disclosure of struggle. What actually helps: one other father who is either in the same phase or recently through it, with whom you can speak honestly about the experience. Not for advice — for normalization. You may need to build this connection deliberately rather than waiting for it to form. A text that says "new baby, losing my mind, you've been through this — can we grab coffee this week?" is not an imposition. It is exactly what that person wishes someone had asked them.`},
   // ── FIRST TRIMESTER — 20 new cards (f-018 to f-037) ──
@@ -3594,7 +3602,7 @@ const LIBRARY_CARDS = [
    title:`Talking to a baby who isn't in your house yet`,
    body:`Your baby can hear — and distinguish voices — from approximately gestational week 25 onward. Research by Kisilevsky and colleagues showed that fetuses respond differently to their mother's voice versus strangers' voices by week 33. DeCasper and Fifer's landmark 1980 study demonstrated that newborns prefer their mother's voice to other female voices within hours of birth — evidence of prenatal auditory learning. As an intended parent, you have a version of this access: your voice can reach your baby through your GC, and research suggests it matters. Speaking to the baby during visits — reading aloud, narrating, simply talking — is not a symbolic gesture. It's a mechanism for the baby to recognize your voice as familiar on the day you meet. Research on IP prenatal bonding also finds that IPs who engage in directed communication toward the pregnancy — talking, writing, keeping a record of the journey — report stronger early bonding after birth than those who held back until they could hold the baby. The bond doesn't begin at birth. You can start right now.`},
   {id:'t-016',phase:'third',weekRange:null,track:'Logistics',
-   tags:[],
+   tags:['support-network'],
    title:`The week-one support plan: build it before birth`,
    body:`The transition home with a newborn is one of the most demanding periods of new parenthood — and research on what determines how well families cope identifies preparation of practical support as one of the most controllable variables. Specifically: food, sleep coverage, and clear communication boundaries. For food: arrange 10–14 days of meals before birth. Meal train coordination or meal delivery services both work; what fails is assuming you'll figure it out when the time comes. For sleep: decide now who covers which hours during the first two weeks. Documented shift schedules outperform "we'll just help each other" arrangements in every study of new parent sleep outcomes. For communication: set expectations about visitors, updates, and alone time before the baby arrives — renegotiating these under sleep deprivation is significantly harder. The people who want to help most will overwhelm you if you haven't given them a structure. Give them a structure before birth, not during.`},
   {id:'t-017',phase:'third',weekRange:null,track:'Surrogacy',
@@ -3739,6 +3747,14 @@ const DAILY_QUESTIONS = [
     {label:`I'm doing this as a solo intended parent`,stateUpdate:{setIsPartnered:false}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
+  {id:'q-006',phase:'preparing',weekRange:null,triggeredByTag:null,
+   question:`Are you planning to be present at the birth?`,
+   options:[
+    {label:`Yes — I plan to be in the delivery room`,stateUpdate:{setBirthAttendance:'in-room'}},
+    {label:`At the hospital, but may not be in the room`,stateUpdate:{setBirthAttendance:'at-hospital'}},
+    {label:`I won't be present for the birth`,stateUpdate:{setBirthAttendance:'not-attending'}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
   // ── MILESTONE CHECK-IN QUESTIONS (triggered by card tag) ──
   {id:'q-010',phase:'first',weekRange:null,triggeredByTag:'doc-folder',
    question:`Where are you with organizing your journey documents?`,
@@ -3839,6 +3855,14 @@ const DAILY_QUESTIONS = [
     {label:`We're waiting until closer to the birth to set it up`,stateUpdate:{noOp:true}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
+  {id:'q-021',phase:'any',weekRange:null,triggeredByTag:'support-network',
+   question:`How's your support network for the newborn phase coming along?`,
+   options:[
+    {label:`Sorted — meals, coverage, and help are all organized`,stateUpdate:{addMilestone:'support-network'}},
+    {label:`Working on it, but not locked in yet`,stateUpdate:{noOp:true}},
+    {label:`Haven't really started thinking about it`,stateUpdate:{noOp:true}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
 ];
 
 function applyQuestionAnswer(qId, stateUpdate) {
@@ -3869,6 +3893,9 @@ function applyQuestionAnswer(qId, stateUpdate) {
     }
     if (stateUpdate.setIsPartnered !== undefined) {
       state.settings.isPartnered = stateUpdate.setIsPartnered;
+    }
+    if (stateUpdate.setBirthAttendance) {
+      state.settings.birthAttendance = stateUpdate.setBirthAttendance;
     }
   }
   save();
@@ -4004,6 +4031,10 @@ function getPhasePool(phase) {
     : !!(state.settings && state.settings.partnerName);
   if (isPartnered === false) {
     const f = pool.filter(c => !(c.tags || []).includes('has-partner'));
+    if (f.length > 0) pool = f;
+  }
+  if (state.settings && state.settings.birthAttendance === 'not-attending') {
+    const f = pool.filter(c => !(c.tags || []).includes('birth-attendance-ip'));
     if (f.length > 0) pool = f;
   }
 
@@ -4450,6 +4481,9 @@ function setProfileField(field,value){
     if(value)state.mutedSensitivity=state.mutedSensitivity.filter(t=>t!=='anxiety-content');
     else if(!state.mutedSensitivity.includes('anxiety-content'))state.mutedSensitivity.push('anxiety-content');
     if(!state.questionLog['q-004']||!state.questionLog['q-004'].answered)state.questionLog['q-004']={answered:todayStr(),update:{}};
+  }else if(field==='birthAttendance'){
+    state.settings.birthAttendance=value;
+    if(!state.questionLog['q-006']||!state.questionLog['q-006'].answered)state.questionLog['q-006']={answered:todayStr(),update:{}};
   }
   save();renderSituationProfile();
 }
@@ -4460,8 +4494,32 @@ function renderSituationProfile(){
   ab('s-first-time',s.isFirstTimeParent===true?true:s.isFirstTimeParent===false?false:null);
   ab('s-prior-loss',s.priorLoss===true?true:s.priorLoss===false?false:null);
   ab('s-partnered',s.isPartnered===true?true:s.isPartnered===false?false:null);
+  const bg=document.getElementById('s-birth-attend');
+  if(bg){const bb=bg.querySelectorAll('button');
+    if(bb[0])bb[0].classList.toggle('active',s.birthAttendance==='in-room');
+    if(bb[1])bb[1].classList.toggle('active',s.birthAttendance==='at-hospital');
+    if(bb[2])bb[2].classList.toggle('active',s.birthAttendance==='not-attending');}
   ab('s-content-legal',!mt.includes('Legal'));
   ab('s-content-anxiety',!ms.includes('anxiety-content'));
+  const gcDistField=document.getElementById('s-gc-dist')?.closest('.settings-situation-field');
+  if(gcDistField)gcDistField.style.display=isSurrogacyPath(s.familyPath)?'':'none';
+}
+function inferProfileFromOnboarding(){
+  const s=state.settings||{};
+  if(!state.questionLog)state.questionLog={};
+  let mutated=false;
+  if(s.partnerName&&s.isPartnered===null){
+    s.isPartnered=true;
+    if(!state.questionLog['q-005']||!state.questionLog['q-005'].answered)state.questionLog['q-005']={answered:todayStr(),update:{}};
+    mutated=true;
+  }
+  if(!isSurrogacyPath(s.familyPath)){
+    if(!state.questionLog['q-001']||!state.questionLog['q-001'].answered){
+      state.questionLog['q-001']={answered:todayStr(),update:{}};
+      mutated=true;
+    }
+  }
+  if(mutated)save();
 }
 function setTransferUnknown(){
   const s=state.settings||{};
@@ -4566,7 +4624,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.11'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.12'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -5165,6 +5223,7 @@ function onboardingDone() {
   if(g?.value.trim())state.settings.gcName=g.value.trim();
   state.settings.familyPath = obPath;
   state.settings.onboardingDone = true;
+  inferProfileFromOnboarding();
   save();
   closeOnboarding();
   applySettings();
@@ -5207,6 +5266,7 @@ renderStreakStrip();
 renderMarkReadBtn();
 applySettings();
 checkOnboarding();
+inferProfileFromOnboarding();
 (function(){var h=window.location.hash.slice(1);if(h&&screens.slice(1).includes(h))go(h);})();
 saveSnapshot();
 initAuth();
