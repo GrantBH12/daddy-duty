@@ -1,5 +1,5 @@
-/* Daddy Duty service worker — cache key: daddy-duty-v4-8 */
-const CACHE = 'daddy-duty-v4-8';
+/* Daddy Duty service worker — cache key: daddy-duty-v4-9 */
+const CACHE = 'daddy-duty-v4-9';
 const APP_URL = self.location.pathname.replace(/sw\.js$/, '');
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.add(APP_URL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
