@@ -940,6 +940,8 @@
 </style>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'><circle cx='8' cy='8' r='6' stroke='%23c97156' stroke-width='2'/></svg>"/>
 <script>if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js")</script>
+<script defer data-domain="granthb12.github.io/daddy-duty" src="https://plausible.io/js/script.js"></script>
+<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)}</script>
 </head>
 <body>
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
@@ -993,7 +995,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v4.7 · cloud sync</span>
+      <span class="brand-meta">v4.8 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1822,7 +1824,7 @@ function seedIfEmpty(){
 
 function save(){
   const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),completedMilestones:state.completedMilestones||[],mutedTracks:state.mutedTracks||[],mutedSensitivity:state.mutedSensitivity||[],questionLog:state.questionLog||{},settings:state.settings||{},_savedAt:Date.now()};
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(snap));}catch{}
+  try{const _r=JSON.stringify(snap);localStorage.setItem(STORAGE_KEY,_r);console.debug('State size:',(_r.length/1024).toFixed(1)+'KB');}catch(e){if(e&&e.name==='QuotaExceededError')showToast('Storage full — export a backup to free space');}
   debouncedCloudSave();
 }
 function saveSnapshot(){
@@ -1893,7 +1895,7 @@ function updatePhaseProgress() {
    RENDER
 ============================================================ */
 function renderBudgetHomeCount(){const el=document.getElementById('budget-progress');if(!el)return;initBudgetState();const gt=getBabyTotal()+getSurrTotal();const pc=getPricedCount(),tc=getTotalItems();el.innerHTML=gt>0?`<strong>${fmtMoney(gt)}</strong> committed`:`<strong>${pc}</strong> of ${tc} priced`;}
-function render(){renderSummary();updatePhaseProgress();if(state.todoView==='phases')renderPhases();else if(state.todoView==='week')renderThisWeek();else if(state.todoView==='timeline')renderTimeline();renderHomeCount();renderMyStuffHomeCount();renderMyStuff();renderTodoViewTabs();renderBudgetModule();renderJournalHomeCount();renderNudge();renderLibHomeProgress();renderBagHomeCount();renderShoppingHomeCount();renderBudgetHomeCount();}
+function render(){try{renderSummary();updatePhaseProgress();if(state.todoView==='phases')renderPhases();else if(state.todoView==='week')renderThisWeek();else if(state.todoView==='timeline')renderTimeline();renderHomeCount();renderMyStuffHomeCount();renderMyStuff();renderTodoViewTabs();renderBudgetModule();renderJournalHomeCount();renderNudge();renderLibHomeProgress();renderBagHomeCount();renderShoppingHomeCount();renderBudgetHomeCount();}catch(e){console.error('render() failed:',e);}}
 
 function renderSummary(){
   const total=state.tasks.length,done=state.tasks.filter(t=>t.status==='done').length;
@@ -4277,6 +4279,7 @@ function markCardRead(){
     return;
   }
   markCardReadById(todayCard.id);
+  window.plausible('Card Read',{props:{track:todayCard.track,phase:todayCard.phase}});
   // Recompute streak from dailyCardLog + readCardIds
   let streak=0;
   let check=today;
@@ -4466,7 +4469,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.7'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.8'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -5090,7 +5093,7 @@ function openJournalPrompt(){
   renderJournal();
   updateJournalHeader();
 }
-function go(id){window.location.hash=id==='home'?'':id;screens.forEach(s=>{const el=document.getElementById(s);if(el)el.classList.toggle('active',s===id);});document.getElementById('homeBtn').classList.toggle('hidden',id==='home');window.scrollTo({top:0,behavior:'smooth'});if(id==='journal'){jView='list';renderJournal();updateJournalHeader();}if(id==='library'){libViewingDateStr=null;libBrowseMode=false;renderLibrary();}if(id==='bag'){setBagTab(bagTab);renderBag();}if(id==='shopping')renderShopping();}
+function go(id){window.location.hash=id==='home'?'':id;if(id!=='home')window.plausible('Module Open',{props:{screen:id}});screens.forEach(s=>{const el=document.getElementById(s);if(el)el.classList.toggle('active',s===id);});document.getElementById('homeBtn').classList.toggle('hidden',id==='home');window.scrollTo({top:0,behavior:'smooth'});if(id==='journal'){jView='list';renderJournal();updateJournalHeader();}if(id==='library'){libViewingDateStr=null;libBrowseMode=false;renderLibrary();}if(id==='bag'){setBagTab(bagTab);renderBag();}if(id==='shopping')renderShopping();}
 
 /* INIT */
 loadPrefs();
@@ -5117,6 +5120,15 @@ initAuth();
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('hub-date').innerText=`${days[d.getDay()]} · ${months[d.getMonth()]} ${d.getDate()}`;
 })();
+
+window.onerror=function(msg,src,line,col,err){
+  console.error('Uncaught error:',msg,err);
+  if(msg&&msg.indexOf('Script error')===-1&&msg.indexOf('ResizeObserver')===-1)
+    showToast('An error occurred — your data is safe');
+};
+window.addEventListener('unhandledrejection',function(e){
+  console.error('Unhandled promise rejection:',e.reason);
+});
 </script>
 <div class="picker-backdrop" id="onboarding-backdrop"></div>
 <div class="picker-modal" id="onboarding-modal" style="max-width:480px;">
