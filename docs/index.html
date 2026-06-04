@@ -845,6 +845,13 @@
   .settings-select{flex-grow:1;padding:7px 10px;border:1px solid var(--cream-deeper);border-radius:8px;background:var(--cream);font-size:13px;color:var(--ink);outline:none;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:border-color .15s;}
   .settings-select:focus{border-color:var(--terracotta);}
   .settings-danger-zone{padding-top:20px;}
+  .settings-btn-group{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+  .settings-btn-group button{padding:6px 12px;border-radius:20px;font-size:12px;font-family:var(--font-mono);border:1px solid var(--cream-deeper);background:var(--cream);color:var(--ink-soft);cursor:pointer;transition:all .15s;}
+  .settings-btn-group button:hover{border-color:var(--terracotta);color:var(--terracotta);}
+  .settings-btn-group button.active{background:var(--terracotta);border-color:var(--terracotta);color:#fff;}
+  .settings-situation-label{font-size:13px;color:var(--ink-soft);margin-bottom:6px;}
+  .settings-situation-field{margin-bottom:14px;}
+  .settings-situation-field:last-child{margin-bottom:0;}
   .snapshot-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--cream-deeper);margin-bottom:6px;}
   .snapshot-date{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);flex-grow:1;}
   .snapshot-meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-muted);}
@@ -995,7 +1002,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v4.10 · cloud sync</span>
+      <span class="brand-meta">v4.11 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1386,6 +1393,50 @@
           <option value="final">Final weeks</option>
           <option value="post-birth">Post-birth</option>
         </select>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">Your situation</div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:16px;line-height:1.6;">These personalise which cards and content you see. Change them any time.</div>
+      <div class="settings-situation-field">
+        <div class="settings-situation-label">Your GC's proximity</div>
+        <div class="settings-btn-group" id="s-gc-dist">
+          <button onclick="setProfileField('gcDistance','same-state')">Same state</button>
+          <button onclick="setProfileField('gcDistance','different-state')">Different state</button>
+        </div>
+      </div>
+      <div class="settings-situation-field">
+        <div class="settings-situation-label">First-time parent?</div>
+        <div class="settings-btn-group" id="s-first-time">
+          <button onclick="setProfileField('isFirstTimeParent',true)">Yes, first time</button>
+          <button onclick="setProfileField('isFirstTimeParent',false)">I have other children</button>
+        </div>
+      </div>
+      <div class="settings-situation-field">
+        <div class="settings-situation-label">Prior loss or failed transfer?</div>
+        <div class="settings-btn-group" id="s-prior-loss">
+          <button onclick="setProfileField('priorLoss',true)">Yes, we have</button>
+          <button onclick="setProfileField('priorLoss',false)">No / prefer not to say</button>
+        </div>
+      </div>
+      <div class="settings-situation-field">
+        <div class="settings-situation-label">Do you have a partner?</div>
+        <div class="settings-btn-group" id="s-partnered">
+          <button onclick="setProfileField('isPartnered',true)">Yes, partnered</button>
+          <button onclick="setProfileField('isPartnered',false)">No, solo IP</button>
+        </div>
+      </div>
+      <div class="settings-situation-field" style="margin-bottom:0;">
+        <div class="settings-situation-label">Content preferences</div>
+        <div class="settings-btn-group" id="s-content-legal">
+          <button onclick="setProfileField('legalContent',true)">Include legal content</button>
+          <button onclick="setProfileField('legalContent',false)">Skip legal content</button>
+        </div>
+        <div class="settings-btn-group" id="s-content-anxiety" style="margin-top:6px;">
+          <button onclick="setProfileField('anxietyContent',true)">Include clinical/risk content</button>
+          <button onclick="setProfileField('anxietyContent',false)">Skip clinical/risk content</button>
+        </div>
       </div>
     </div>
 
@@ -3829,6 +3880,8 @@ function getNextQuestion() {
   const phase = getCurrentLibPhase();
   const log = state.questionLog || {};
   const today = todayStr();
+  const hadInteractionToday=Object.values(log).some(e=>e.answered===today||e.skipped===today);
+  if(hadInteractionToday)return null;
   const week = getGestationalWeek();
   const lastCardId = state.dailyCardLog && state.dailyCardLog[today];
   const lastCard = lastCardId ? LIBRARY_CARDS.find(c => c.id === lastCardId) : null;
@@ -4357,6 +4410,7 @@ function openSettings(){
   renderSnapshotsList();
   toggleGCField(s.familyPath||'gestational-surrogacy');
   renderAccountSection();
+  renderSituationProfile();
   document.getElementById('settings-backdrop').classList.add('open');
   document.getElementById('settings-modal').classList.add('open');
 }
@@ -4371,6 +4425,43 @@ function toggleGCField(path){
 }
 function previewSettings(){
   // live preview not needed — save on button click
+}
+function setProfileField(field,value){
+  if(!state.questionLog)state.questionLog={};
+  if(field==='gcDistance'){
+    state.settings.gcDistance=value;
+    if(!state.questionLog['q-001']||!state.questionLog['q-001'].answered)state.questionLog['q-001']={answered:todayStr(),update:{}};
+  }else if(field==='isFirstTimeParent'){
+    state.settings.isFirstTimeParent=value;
+    if(!state.questionLog['q-002']||!state.questionLog['q-002'].answered)state.questionLog['q-002']={answered:todayStr(),update:{}};
+  }else if(field==='priorLoss'){
+    state.settings.priorLoss=value;
+    if(!state.questionLog['q-003']||!state.questionLog['q-003'].answered)state.questionLog['q-003']={answered:todayStr(),update:{}};
+  }else if(field==='isPartnered'){
+    state.settings.isPartnered=value;
+    if(!state.questionLog['q-005']||!state.questionLog['q-005'].answered)state.questionLog['q-005']={answered:todayStr(),update:{}};
+  }else if(field==='legalContent'){
+    if(!state.mutedTracks)state.mutedTracks=[];
+    if(value)state.mutedTracks=state.mutedTracks.filter(t=>t!=='Legal');
+    else if(!state.mutedTracks.includes('Legal'))state.mutedTracks.push('Legal');
+    if(!state.questionLog['q-004']||!state.questionLog['q-004'].answered)state.questionLog['q-004']={answered:todayStr(),update:{}};
+  }else if(field==='anxietyContent'){
+    if(!state.mutedSensitivity)state.mutedSensitivity=[];
+    if(value)state.mutedSensitivity=state.mutedSensitivity.filter(t=>t!=='anxiety-content');
+    else if(!state.mutedSensitivity.includes('anxiety-content'))state.mutedSensitivity.push('anxiety-content');
+    if(!state.questionLog['q-004']||!state.questionLog['q-004'].answered)state.questionLog['q-004']={answered:todayStr(),update:{}};
+  }
+  save();renderSituationProfile();
+}
+function renderSituationProfile(){
+  const s=state.settings||{};const mt=state.mutedTracks||[];const ms=state.mutedSensitivity||[];
+  function ab(id,first){const g=document.getElementById(id);if(!g)return;const b=g.querySelectorAll('button');if(b[0])b[0].classList.toggle('active',first===true);if(b[1])b[1].classList.toggle('active',first===false);}
+  ab('s-gc-dist',s.gcDistance==='same-state'?true:s.gcDistance==='different-state'?false:null);
+  ab('s-first-time',s.isFirstTimeParent===true?true:s.isFirstTimeParent===false?false:null);
+  ab('s-prior-loss',s.priorLoss===true?true:s.priorLoss===false?false:null);
+  ab('s-partnered',s.isPartnered===true?true:s.isPartnered===false?false:null);
+  ab('s-content-legal',!mt.includes('Legal'));
+  ab('s-content-anxiety',!ms.includes('anxiety-content'));
 }
 function setTransferUnknown(){
   const s=state.settings||{};
@@ -4475,7 +4566,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.10'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.11'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
