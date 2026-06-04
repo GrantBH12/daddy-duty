@@ -886,6 +886,26 @@
   .lib-nav-btn:disabled { opacity:.3; cursor:not-allowed; }
   .lib-nav-counter { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-muted); text-align:center; }
   .lib-nav-counter strong { color:var(--ink); }
+  .lib-mode-toggle { display:flex; gap:8px; padding:16px 28px 10px; max-width:720px; margin:0 auto; }
+  .lib-mode-btn { padding:7px 16px; border-radius:10px; font-size:13px; font-weight:500; background:var(--cream-deep); color:var(--ink-soft); transition:all .2s; }
+  .lib-mode-btn.active { background:var(--ink); color:var(--cream); }
+  .lib-mode-btn:hover:not(.active) { background:var(--cream-deeper); color:var(--ink); }
+  .lib-browse-bar { padding:0 28px 10px; max-width:720px; margin:0 auto; }
+  .lib-search-input { width:100%; padding:10px 14px; border-radius:10px; border:1px solid var(--border); background:var(--bg-elev); font-size:14px; color:var(--ink); outline:none; font-family:var(--font-body); margin-bottom:10px; box-sizing:border-box; }
+  .lib-search-input:focus { border-color:var(--terra); box-shadow:0 0 0 3px rgba(201,113,86,.12); }
+  .lib-track-filters { display:flex; gap:6px; flex-wrap:wrap; }
+  .lib-track-chip { padding:5px 12px; border-radius:999px; font-size:11px; font-weight:500; background:var(--cream-deep); color:var(--ink-soft); cursor:pointer; transition:all .15s; border:1px solid var(--border); font-family:var(--font-mono); letter-spacing:.04em; }
+  .lib-track-chip.active { background:var(--ink); color:var(--cream); border-color:var(--ink); }
+  .lib-browse-list { padding:4px 28px 16px; max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:6px; }
+  .lib-browse-row { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:12px; background:var(--bg-elev); cursor:pointer; transition:all .15s; border:1px solid transparent; }
+  .lib-browse-row:hover { border-color:var(--border); background:var(--cream-deep); }
+  .lib-browse-track { font-size:11px; font-family:var(--font-mono); color:var(--ink-muted); flex-shrink:0; min-width:76px; }
+  .lib-browse-title { font-size:14px; font-weight:500; color:var(--ink); flex-grow:1; line-height:1.35; }
+  .lib-browse-row.is-read .lib-browse-title { color:var(--ink-soft); }
+  .lib-browse-badge { font-size:12px; color:var(--sage-deep); flex-shrink:0; }
+  .lib-browse-empty { padding:40px 28px; text-align:center; color:var(--ink-muted); font-size:14px; }
+  .lib-browse-back { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:10px; font-size:13px; background:var(--cream-deep); color:var(--ink-soft); cursor:pointer; margin:0 28px 16px; border:none; }
+  .lib-browse-back:hover { background:var(--cream-deeper); color:var(--ink); }
   .lib-series-notice { margin:20px 28px 0; max-width:720px; margin-left:auto; margin-right:auto; background:var(--sage-soft); border-radius:12px; padding:14px 18px; display:flex; gap:12px; align-items:flex-start; }
   .lib-series-notice p { font-size:13px; color:var(--sage-deep); line-height:1.55; }
   .lib-series-notice button { font-size:12px; font-weight:500; color:var(--sage-deep); text-decoration:underline; background:none; border:none; cursor:pointer; padding:0; white-space:nowrap; margin-top:2px; }
@@ -970,7 +990,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v4.5 · cloud sync</span>
+      <span class="brand-meta">v4.6 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1242,7 +1262,15 @@
         <div class="lib-prog-track"><div class="lib-prog-bar" id="lib-prog-bar" style="width:0%"></div></div>
       </div>
       <div id="lib-series-notice-wrap"></div>
-      <div class="lib-nav">
+      <div class="lib-mode-toggle">
+        <button class="lib-mode-btn active" id="lib-btn-card" onclick="setLibMode('card')">Today's card</button>
+        <button class="lib-mode-btn" id="lib-btn-browse" onclick="setLibMode('browse')">Browse all</button>
+      </div>
+      <div class="lib-browse-bar" id="lib-browse-bar" style="display:none;">
+        <input class="lib-search-input" id="lib-search-input" type="text" placeholder="Search cards…" oninput="onLibSearch(this.value)"/>
+        <div class="lib-track-filters" id="lib-track-filters"></div>
+      </div>
+      <div class="lib-nav" id="lib-nav-wrap">
         <button class="lib-nav-btn" id="lib-prev-btn" onclick="libNav(-1)" disabled>← Previous</button>
         <div class="lib-nav-counter"><strong id="lib-day-label">Day —</strong><br><span id="lib-date-label">—</span></div>
         <button class="lib-nav-btn" id="lib-next-btn" onclick="libNav(1)" disabled>Next →</button>
@@ -3594,6 +3622,9 @@ const LIBRARY_CARDS = [
 ];
 
 let libViewingDateStr = null;
+let libBrowseMode = false;
+let libBrowseQuery = '';
+let libBrowseTrack = null;
 
 const DAILY_QUESTIONS = [
   // ── SITUATION QUESTIONS (asked early in preparing phase) ──
@@ -3950,8 +3981,7 @@ function renderLibrary() {
   if (pr) pr.textContent = readCount + ' of ' + pool.length + ' read';
   const noticeWrap = document.getElementById('lib-series-notice-wrap');
   if (noticeWrap) noticeWrap.innerHTML = `<div class="lib-phase-notice" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px;padding:10px 14px;background:var(--cream-deep);border-radius:8px;">Phase: <strong style="color:var(--ink);">${phaseLabels[phase]||phase}</strong></div>`;
-  libViewingDateStr = null;
-  renderLibCard();
+  if (libBrowseMode) { renderLibBrowse(); } else { libViewingDateStr = null; renderLibCard(); }
 }
 
 function renderLibCard() {
@@ -4014,6 +4044,107 @@ function markLibCardRead(cardId) {
   renderLibrary();
   renderHomeCard();
 }
+
+/* ── Library Browse Mode ──────────────────────────────────────────────────── */
+function setLibMode(mode) {
+  libBrowseMode = mode === 'browse';
+  const cardBtn = document.getElementById('lib-btn-card');
+  const browseBtn = document.getElementById('lib-btn-browse');
+  const nav = document.getElementById('lib-nav-wrap');
+  const bar = document.getElementById('lib-browse-bar');
+  const stage = document.getElementById('lib-card-stage');
+  if (cardBtn) cardBtn.classList.toggle('active', !libBrowseMode);
+  if (browseBtn) browseBtn.classList.toggle('active', libBrowseMode);
+  if (nav) nav.style.display = libBrowseMode ? 'none' : '';
+  if (bar) bar.style.display = libBrowseMode ? '' : 'none';
+  if (libBrowseMode) {
+    libBrowseQuery = '';
+    libBrowseTrack = null;
+    const input = document.getElementById('lib-search-input');
+    if (input) input.value = '';
+    if (stage) stage.style.marginTop = '0';
+    renderLibBrowseFilters();
+    renderLibBrowse();
+  } else {
+    if (stage) stage.style.marginTop = '20px';
+    libViewingDateStr = null;
+    renderLibCard();
+  }
+}
+
+function onLibSearch(val) {
+  libBrowseQuery = val.trim().toLowerCase();
+  renderLibBrowse();
+}
+
+function setLibBrowseTrack(track) {
+  libBrowseTrack = libBrowseTrack === track ? null : track;
+  renderLibBrowseFilters();
+  renderLibBrowse();
+}
+
+function renderLibBrowseFilters() {
+  const el = document.getElementById('lib-track-filters');
+  if (!el) return;
+  const tracks = ['Bonding','Medical','Legal','Emotional','Surrogacy','Self','Logistics'];
+  el.innerHTML = tracks.map(t =>
+    `<button class="lib-track-chip${libBrowseTrack===t?' active':''}" onclick="setLibBrowseTrack('${t}')">${t}</button>`
+  ).join('');
+}
+
+function renderLibBrowse() {
+  const stage = document.getElementById('lib-card-stage');
+  if (!stage) return;
+  stage.style.marginTop = '0';
+  const phase = getCurrentLibPhase();
+  let pool = getPhasePool(phase);
+  if (libBrowseTrack) pool = pool.filter(c => c.track === libBrowseTrack);
+  if (libBrowseQuery) pool = pool.filter(c =>
+    c.title.toLowerCase().includes(libBrowseQuery) || c.body.toLowerCase().includes(libBrowseQuery)
+  );
+  if (!pool.length) {
+    stage.innerHTML = '<div class="lib-browse-empty">No cards match.</div>';
+    return;
+  }
+  const readIds = state.readCardIds || [];
+  stage.innerHTML = `<div class="lib-browse-list">${pool.map(c => {
+    const isRead = readIds.includes(c.id);
+    return `<div class="lib-browse-row${isRead?' is-read':''}" onclick="libOpenCard('${c.id}')"><span class="lib-browse-track">${c.track}</span><span class="lib-browse-title">${escapeHtml(c.title)}</span>${isRead?'<span class="lib-browse-badge">\u2713</span>':''}</div>`;
+  }).join('')}</div>`;
+}
+
+function libOpenCard(cardId) {
+  const card = LIBRARY_CARDS.find(c => c.id === cardId);
+  if (!card) return;
+  const stage = document.getElementById('lib-card-stage');
+  if (!stage) return;
+  stage.style.marginTop = '0';
+  const alreadyRead = (state.readCardIds || []).includes(card.id);
+  const phaseLabels = {preparing:'Preparing',first:'First Trimester',second:'Second Trimester',third:'Third Trimester',newborn:'Newborn'};
+  stage.innerHTML = `<button class="lib-browse-back" onclick="renderLibBrowse()">← Browse</button><div class="lib-card"><div class="lib-card-eyebrow"><span class="lib-card-track">${card.track}</span><span class="lib-card-phase">${phaseLabels[card.phase]||card.phase}</span></div><h2 class="lib-card-title">${card.title}</h2><p class="lib-card-body">${card.body}</p><div class="lib-card-actions"><button class="lib-card-btn primary${alreadyRead?' done':''}" onclick="markLibBrowseCardRead('${card.id}')">${alreadyRead?'Read \u2726':'Mark as read \u00b7 +10 XP'}</button><button class="lib-card-btn ghost" onclick="reflectInJournal()">Reflect in journal</button></div></div>`;
+}
+
+function markLibBrowseCardRead(cardId) {
+  if (!state.readCardIds) state.readCardIds = [];
+  if (!state.readCardIds.includes(cardId)) {
+    state.xp = (state.xp || 0) + 10;
+    if (state.lastCheckinDate !== todayStr()) {
+      state.streak = (state.streak || 0) + 1;
+      state.lastCheckinDate = todayStr();
+    }
+    markCardReadById(cardId);
+    const pool = getPhasePool(getCurrentLibPhase());
+    const readCount = (state.readCardIds || []).filter(id => pool.some(c => c.id === id)).length;
+    const pbar = document.getElementById('lib-prog-bar');
+    if (pbar) pbar.style.width = pool.length > 0 ? Math.round(readCount / pool.length * 100) + '%' : '0%';
+    const pr = document.getElementById('lib-prog-label-right');
+    if (pr) pr.textContent = readCount + ' of ' + pool.length + ' read';
+    renderLibHomeProgress();
+    renderHomeCard();
+  }
+  libOpenCard(cardId);
+}
+
 
 function renderHomeCard() {
   const card = getTodayCard();
@@ -4320,7 +4451,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.5'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.6'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -4944,7 +5075,7 @@ function openJournalPrompt(){
   renderJournal();
   updateJournalHeader();
 }
-function go(id){window.location.hash=id==='home'?'':id;screens.forEach(s=>{const el=document.getElementById(s);if(el)el.classList.toggle('active',s===id);});document.getElementById('homeBtn').classList.toggle('hidden',id==='home');window.scrollTo({top:0,behavior:'smooth'});if(id==='journal'){jView='list';renderJournal();updateJournalHeader();}if(id==='library'){libViewingDateStr=null;renderLibrary();}if(id==='bag'){setBagTab(bagTab);renderBag();}if(id==='shopping')renderShopping();}
+function go(id){window.location.hash=id==='home'?'':id;screens.forEach(s=>{const el=document.getElementById(s);if(el)el.classList.toggle('active',s===id);});document.getElementById('homeBtn').classList.toggle('hidden',id==='home');window.scrollTo({top:0,behavior:'smooth'});if(id==='journal'){jView='list';renderJournal();updateJournalHeader();}if(id==='library'){libViewingDateStr=null;libBrowseMode=false;renderLibrary();}if(id==='bag'){setBagTab(bagTab);renderBag();}if(id==='shopping')renderShopping();}
 
 /* INIT */
 loadPrefs();
