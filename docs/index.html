@@ -256,6 +256,8 @@
   .countdown-widget .countdown-phase { margin-top:0; margin-bottom:8px; }
   .countdown-widget .phase-prog-wrap { margin-top:0; }
   @media(max-width:560px){ .countdown-widget { flex-direction:column; align-items:stretch; } .cw-left { padding-right:0; border-right:none; border-bottom:1px solid var(--rule); padding-bottom:14px; } }
+  .cw-settings-btn { font-size:11px; font-family:var(--font-mono); color:var(--ink-muted); background:none; border:none; cursor:pointer; margin-top:10px; padding:0; }
+  .cw-settings-btn:hover { color:var(--ink); }
 
   /* ── Daily question inside today's card (dark background overrides) ─────── */
   .todays-card .daily-question { margin:0 0 22px; background:rgba(245,237,224,.07); border:1px solid rgba(245,237,224,.1); border-radius:14px; padding:20px 22px; max-width:none; }
@@ -739,7 +741,7 @@
   .surro-title{font-family:'Fraunces',serif;font-size:22px;font-weight:500;letter-spacing:-.01em;}
   .surro-subtitle{font-size:13px;color:var(--ink-soft);}
   .surro-total{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sage-deep);letter-spacing:.06em;text-transform:uppercase;}
-  .budget-summary-card{background:var(--cream-deep);border-radius:16px;padding:22px 24px;margin-bottom:20px;}
+  .budget-summary-card{background:var(--cream-deep);border-radius:16px;padding:22px 24px;margin-bottom:20px;position:sticky;top:72px;z-index:10;box-shadow:0 4px 16px rgba(42,38,32,.08);}
   .budget-range-row{display:flex;align-items:baseline;gap:10px;margin-bottom:4px;}
   .budget-range-lo{font-family:'Fraunces',serif;font-size:36px;font-weight:300;letter-spacing:-.03em;color:var(--ink);}
   .budget-range-sep{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-muted);}
@@ -968,7 +970,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v4.4 · cloud sync</span>
+      <span class="brand-meta">v4.5 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1024,6 +1026,7 @@
             <div class="phase-prog-bar" id="phase-progress-bar"></div>
           </div>
         </div>
+        <button class="cw-settings-btn" onclick="openSettings()">⚙ Edit dates</button>
       </div>
     </div>
 
@@ -2017,7 +2020,7 @@ function renderMyStuffItem(type,item){
 }
 function addNewItem(){const type=TYPE_BY_TAB[state.myStuffTab];const def={link:{label:'New link',url:''},contact:{name:'New contact',role:'',phone:'',email:'',note:''},document:{label:'New document',url:''}};createItem(type,def[type]||{});save();render();}
 function countReferences(type,id){return state.tasks.reduce((n,t)=>n+((t.attachments||[]).filter(a=>a.type===type&&a.id===id).length),0);}
-function confirmDeleteItem(type,id){const refs=countReferences(type,id);const msg=refs>0?`Delete this item? It's attached to ${refs} task${refs===1?'':'s'} and will be removed from those too.`:'Delete this item from My Stuff?';if(!confirm(msg))return;deleteItem(type,id);save();render();showToast('Deleted');}
+function confirmDeleteItem(type,id){const b=BUCKET[type];const idx=(state.myStuff[b]||[]).findIndex(x=>x.id===id);if(idx===-1)return;const snap=JSON.parse(JSON.stringify(state.myStuff[b][idx]));deleteItem(type,id);save();render();showToast('Deleted',function(){(state.myStuff[b]=state.myStuff[b]||[]).splice(idx,0,snap);save();render();});}
 
 /* PICKER */
 let pickerCtx={taskId:null,type:null};
@@ -2090,7 +2093,7 @@ function renderThisWeek(){
   const po=PHASES.map(p=>p.id);tasks.sort((a,b)=>po.indexOf(a.phase)-po.indexOf(b.phase));
   if(!tasks.length){container.innerHTML=`<div class="week-empty"><span class="we-glyph">◎</span><div class="we-title">Your week is blank</div><div class="we-sub">Go to Phases, expand any task, and tap "+ Add to this week."</div></div>`;return;}
   const dc=tasks.filter(t=>t.status==='done').length;
-  let html=`<div class="week-header-row"><div class="week-title">This week <span style="font-size:14px;color:var(--ink-muted);font-family:'IBM Plex Mono',monospace;font-weight:400;margin-left:8px;">${dc}/${tasks.length} done</span></div><button class="tiny-btn danger" onclick="if(confirm('Clear all tasks from this week?')){state.thisWeek=new Set();save();render();}">Clear week</button></div>`;
+  let html=`<div class="week-header-row"><div class="week-title">This week <span style="font-size:14px;color:var(--ink-muted);font-family:'IBM Plex Mono',monospace;font-weight:400;margin-left:8px;">${dc}/${tasks.length} done</span></div><button class="tiny-btn danger" onclick="(function(){var prev=new Set(state.thisWeek);state.thisWeek=new Set();save();render();showToast('Week cleared',function(){state.thisWeek=prev;save();render();});})()">Clear week</button></div>`;
   tasks.forEach(t=>{const phase=PHASES.find(p=>p.id===t.phase);const u=getDueUrgency(t.dueDate);html+=`<div class="week-task ${t.status==='done'?'done':''}"><div class="wt-check" onclick="toggleDone(event,'${t.id}')">${t.status==='done'?'✓':''}</div><div class="wt-body"><div class="wt-title">${escapeHtml(resolveTokens(t.title))}</div><div class="task-meta" style="margin-top:4px;"><span class="task-tag ${t.cat.toLowerCase()}">${t.cat}</span>${phase?`<span class="task-tag">${phase.label}</span>`:''} ${u?`<span class="task-due ${u}">${u==='overdue'?'Overdue: ':''}${formatDate(t.dueDate)}</span>`:''}</div></div><div class="wt-remove" onclick="toggleThisWeek('${t.id}')">Remove</div></div>`;});
   html+=`<div class="week-add-hint">Switch to Phases view to add more tasks</div>`;
   container.innerHTML=html;
@@ -2286,7 +2289,7 @@ function getRegistryTotal(){return BUDGET_CATS.reduce((sum,cat)=>{const s=state.
 function getActualTotal(){return[...BUDGET_CATS,...getJourneyCats()].reduce((sum,cat)=>sum+(parseFloat(state.budget[cat.id]?.actual)||0),0);}
 function fmtMoney(n){return'$'+Math.round(n).toLocaleString('en-US');}
 function estimateFrom(tier){BUDGET_CATS.forEach(cat=>{if(!state.budget[cat.id])state.budget[cat.id]=defaultBudgetEntry();if(state.budget[cat.id].price==null&&cat[tier])state.budget[cat.id].price=cat[tier].price;});save();renderBudgetModule();}
-function clearAllPrices(){if(!confirm('Clear all prices?'))return;[...BUDGET_CATS,...SURRO_CATS].forEach(cat=>{if(state.budget[cat.id])state.budget[cat.id].price=null;});(state.budgetCustomItems||[]).forEach(c=>{c.price=null;});save();renderBudgetModule();}
+function clearAllPrices(){var prev=JSON.parse(JSON.stringify(state.budget));var prevC=JSON.parse(JSON.stringify(state.budgetCustomItems||[]));[...BUDGET_CATS,...SURRO_CATS].forEach(cat=>{if(state.budget[cat.id])state.budget[cat.id].price=null;});(state.budgetCustomItems||[]).forEach(c=>{c.price=null;});save();renderBudgetModule();showToast('Prices cleared',function(){state.budget=prev;state.budgetCustomItems=prevC;save();renderBudgetModule();});}
 function setBudgetTier(id,tier){
   const cat=BUDGET_CATS.find(c=>c.id===id);if(!cat||!cat[tier])return;
   if(!state.budget[id])state.budget[id]=defaultBudgetEntry();
@@ -2732,7 +2735,7 @@ function deleteJournalEntry(id) {
   save(); renderJournalHomeCount(); journalGo('list');
   showToast('Entry deleted', ()=>{
     state.journal.splice(idx,0,deleted);
-    save(); renderJournalHomeCount();
+    save(); renderJournalHomeCount(); renderJournal();
   });
 }
 
@@ -4317,7 +4320,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.4'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.5'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -4941,7 +4944,7 @@ function openJournalPrompt(){
   renderJournal();
   updateJournalHeader();
 }
-function go(id){screens.forEach(s=>{const el=document.getElementById(s);if(el)el.classList.toggle('active',s===id);});document.getElementById('homeBtn').classList.toggle('hidden',id==='home');window.scrollTo({top:0,behavior:'smooth'});if(id==='journal'){jView='list';renderJournal();updateJournalHeader();}if(id==='library'){libViewingDateStr=null;renderLibrary();}if(id==='bag'){setBagTab(bagTab);renderBag();}if(id==='shopping')renderShopping();}
+function go(id){window.location.hash=id==='home'?'':id;screens.forEach(s=>{const el=document.getElementById(s);if(el)el.classList.toggle('active',s===id);});document.getElementById('homeBtn').classList.toggle('hidden',id==='home');window.scrollTo({top:0,behavior:'smooth'});if(id==='journal'){jView='list';renderJournal();updateJournalHeader();}if(id==='library'){libViewingDateStr=null;renderLibrary();}if(id==='bag'){setBagTab(bagTab);renderBag();}if(id==='shopping')renderShopping();}
 
 /* INIT */
 loadPrefs();
@@ -4958,6 +4961,7 @@ renderStreakStrip();
 renderMarkReadBtn();
 applySettings();
 checkOnboarding();
+(function(){var h=window.location.hash.slice(1);if(h&&screens.slice(1).includes(h))go(h);})();
 saveSnapshot();
 initAuth();
 
