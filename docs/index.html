@@ -785,6 +785,9 @@
   .jec-badge.letter{background:var(--terracotta-soft);color:var(--terracotta-deep);}
   .jec-badge.prompted{background:var(--sage-soft);color:var(--sage-deep);}
   .jec-preview{font-family:'Fraunces',serif;font-size:15px;color:var(--ink);line-height:1.45;font-style:italic;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+  .jl-month-header{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-muted);margin:20px 0 10px;padding:8px 14px;background:var(--cream-deep);border-radius:8px;display:flex;align-items:baseline;gap:6px;}
+  .jl-month-header:first-child{margin-top:0;}
+  .jl-month-count{font-weight:400;letter-spacing:0;text-transform:none;font-size:11px;}
   .journal-empty{padding:60px 20px;text-align:center;}
   .journal-empty .je-glyph{font-family:'Fraunces',serif;font-size:52px;font-style:italic;color:var(--ink-muted);opacity:.2;margin-bottom:16px;display:block;}
   .journal-empty .je-title{font-family:'Fraunces',serif;font-size:22px;font-weight:400;color:var(--ink);margin-bottom:8px;}
@@ -990,7 +993,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v4.6 · cloud sync</span>
+      <span class="brand-meta">v4.7 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -2610,17 +2613,29 @@ function renderJournalList(el) {
     </div>`;
     return;
   }
-  el.innerHTML = `<div class="journal-list">${entries.map(e => {
-    const date = new Date(e.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-    const preview = (e.body||'').trim().slice(0,130) + ((e.body||'').length>130?'…':'');
-    return `<div class="journal-entry-card ${e.isLetter?'letter':''}" onclick="journalGo('detail','${e.id}')">
-      <div class="jec-header">
-        <span class="jec-date">${date}</span>
-        ${e.isLetter?'<span class="jec-badge letter">Letter</span>':''}
-        ${e.promptText?'<span class="jec-badge prompted">Prompted</span>':''}
-      </div>
-      <div class="jec-preview">${escapeHtml(e.isLetter?'Dear kid, '+preview:preview)||'<em style="color:var(--ink-muted)">Empty entry</em>'}</div>
-    </div>`;
+  // Group entries by month/year with section headers
+  const grouped = {};
+  const groupOrder = [];
+  entries.forEach(e => {
+    const key = new Date(e.createdAt).toLocaleDateString('en-US', {month:'long', year:'numeric'});
+    if (!grouped[key]) { grouped[key] = []; groupOrder.push(key); }
+    grouped[key].push(e);
+  });
+  el.innerHTML = `<div class="journal-list">${groupOrder.map(key => {
+    const grp = grouped[key];
+    const hdr = `<div class="jl-month-header">${key}<span class="jl-month-count">· ${grp.length} ${grp.length===1?'entry':'entries'}</span></div>`;
+    return hdr + grp.map(e => {
+      const date = new Date(e.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+      const preview = (e.body||'').trim().slice(0,130) + ((e.body||'').length>130?'…':'');
+      return `<div class="journal-entry-card ${e.isLetter?'letter':''}" onclick="journalGo('detail','${e.id}')">
+        <div class="jec-header">
+          <span class="jec-date">${date}</span>
+          ${e.isLetter?'<span class="jec-badge letter">Letter</span>':''}
+          ${e.promptText?'<span class="jec-badge prompted">Prompted</span>':''}
+        </div>
+        <div class="jec-preview">${escapeHtml(e.isLetter?'Dear kid, '+preview:preview)||'<em style="color:var(--ink-muted)">Empty entry</em>'}</div>
+      </div>`;
+    }).join('');
   }).join('')}</div>`;
 }
 
@@ -4451,7 +4466,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.6'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.7'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
