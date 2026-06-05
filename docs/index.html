@@ -1129,7 +1129,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v4.15 · cloud sync</span>
+      <span class="brand-meta">v4.16 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1483,7 +1483,7 @@
       </div>
     </div>
 
-    <div class="settings-section">
+    <div class="settings-section" id="settings-journey-section">
       <div class="settings-section-label">Journey</div>
       <div class="settings-row">
         <label class="settings-field-label">GC's name <span class="settings-hint">(optional)</span></label>
@@ -2018,7 +2018,7 @@ let state = {
     currentPhase:'pre-transfer',
     gcName:'',
     transferDateStr:'',
-    gcDistance:null, priorLoss:null, isFirstTimeParent:null, isPartnered:null, birthAttendance:null
+    gcDistance:null, priorLoss:null, isFirstTimeParent:null, isPartnered:null, birthAttendance:null, userRole:null, linkedIpUserId:null
   },
   snapshots:[]
 };
@@ -2029,7 +2029,7 @@ function deleteItem(type,id){const b=BUCKET[type];if(!b)return;const idx=(state.
 
 function seedIfEmpty(){
   const raw=localStorage.getItem(STORAGE_KEY);
-  if(raw){try{const p=JSON.parse(raw);if(p.tasks&&p.tasks.length>0){state.tasks=p.tasks;state.myStuff=p.myStuff||{links:[],contacts:[],documents:[]};['links','contacts','documents'].forEach(k=>{if(!state.myStuff[k])state.myStuff[k]=[];});state.tasks.forEach(t=>{if(!t.attachments)t.attachments=[];if(t.dueDate===undefined)t.dueDate='';});state.thisWeek=new Set(p.thisWeek||[]);state.budget=p.budget||{};state.shopping=p.shopping||{};state.budgetCustomItems=p.budgetCustomItems||[];state.journal=p.journal||[];state.xp=p.xp||0;state.streak=p.streak||0;state.lastCheckinDate=p.lastCheckinDate||'';state.readCardIds=p.readCardIds||[];state.dailyCardLog=p.dailyCardLog||{};state.hospitalBag=p.hospitalBag||initHospitalBag();state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',gcName:'',transferDateStr:'',gcDistance:null,priorLoss:null,isFirstTimeParent:null,isPartnered:null,birthAttendance:null},p.settings||{});if(state.settings.familyPath==='adoption')state.settings.familyPath='ivf';state.completedMilestones=p.completedMilestones||[];state.mutedTracks=p.mutedTracks||[];state.mutedSensitivity=p.mutedSensitivity||[];state.questionLog=p.questionLog||{};initBudgetState();return;}}catch{}}
+  if(raw){try{const p=JSON.parse(raw);if(p.tasks&&p.tasks.length>0){state.tasks=p.tasks;state.myStuff=p.myStuff||{links:[],contacts:[],documents:[]};['links','contacts','documents'].forEach(k=>{if(!state.myStuff[k])state.myStuff[k]=[];});state.tasks.forEach(t=>{if(!t.attachments)t.attachments=[];if(t.dueDate===undefined)t.dueDate='';});state.thisWeek=new Set(p.thisWeek||[]);state.budget=p.budget||{};state.shopping=p.shopping||{};state.budgetCustomItems=p.budgetCustomItems||[];state.journal=p.journal||[];state.xp=p.xp||0;state.streak=p.streak||0;state.lastCheckinDate=p.lastCheckinDate||'';state.readCardIds=p.readCardIds||[];state.dailyCardLog=p.dailyCardLog||{};state.hospitalBag=p.hospitalBag||initHospitalBag();state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',gcName:'',transferDateStr:'',gcDistance:null,priorLoss:null,isFirstTimeParent:null,isPartnered:null,birthAttendance:null,userRole:null,linkedIpUserId:null},p.settings||{});if(state.settings.familyPath==='adoption')state.settings.familyPath='ivf';state.completedMilestones=p.completedMilestones||[];state.mutedTracks=p.mutedTracks||[];state.mutedSensitivity=p.mutedSensitivity||[];state.questionLog=p.questionLog||{};initBudgetState();return;}}catch{}}
   const legacyRaw=localStorage.getItem(LEGACY_KEY_V22);
   if(legacyRaw){try{const legacy=JSON.parse(legacyRaw);if(legacy.tasks&&legacy.tasks.length>0){state.tasks=legacy.tasks.map(t=>({...t,attachments:[]}));legacy.tasks.forEach((lt,ti)=>{(lt.attachments||[]).forEach(a=>{if(!a||!a.type)return;if(a.type==='file'){a.type='document';a.label=a.name||a.label||'Untitled';a.url=a.url||'';}if(a.type==='link'){const item=createItem('link',{label:a.label||'Untitled link',url:a.url||''});state.tasks[ti].attachments.push({type:'link',id:item.id});}else if(a.type==='document'){const item=createItem('document',{label:a.label||'Untitled document',url:a.url||''});state.tasks[ti].attachments.push({type:'document',id:item.id});}else if(a.type==='contact'){const item=createItem('contact',{name:a.name||'Untitled',role:a.role||'',phone:a.phone||'',email:a.email||'',note:a.note||''});state.tasks[ti].attachments.push({type:'contact',id:item.id});}});});state.phaseCollapsed=legacy.phaseCollapsed?new Set(legacy.phaseCollapsed):new Set(PHASES.map(p=>p.id).filter(id=>id!==getCurrentPhase()));save();return;}}catch{}}
   state.tasks=SEED_TASKS.map(t=>({id:uid(),title:t.title,notes:'',cat:t.cat,tags:t.tags.slice(),phase:t.phase,pinned:false,status:'open',steps:[],attachments:[],dueDate:'',createdBy:'seed'}));
@@ -2134,6 +2134,7 @@ function renderHomeCount(){const total=state.tasks.length,done=state.tasks.filte
 
 function passesFilter(t){
   if(!isSurrogacyPath(state.settings.familyPath)&&t.tags&&t.tags.includes('GC'))return false;
+  if((state.settings||{}).userRole==='partner'&&t.tags&&t.tags.includes('GC'))return false;
   if(state.filters.status==='open'&&t.status!=='open')return false;
   if(state.filters.status==='done'&&t.status!=='done')return false;
   if(state.filters.cat.size>0&&!state.filters.cat.has(t.cat))return false;
@@ -2298,7 +2299,7 @@ function renderPickerOption(type,item){
   return'';
 }
 function closePicker(){document.getElementById('picker-backdrop').classList.remove('open');document.getElementById('picker-modal').classList.remove('open');pickerCtx={taskId:null,type:null};}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('picker-modal')?.classList.contains('open'))closePicker();if(document.getElementById('settings-modal')?.classList.contains('open'))closeSettings();if(document.getElementById('ideas-modal')?.classList.contains('open'))closeProductIdeas();if(document.getElementById('privacy-modal')?.classList.contains('open'))closePrivacy();if(document.getElementById('onboarding-modal')?.classList.contains('open')){closeOnboarding();state.settings.onboardingDone=true;save();}}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('picker-modal')?.classList.contains('open'))closePicker();if(document.getElementById('settings-modal')?.classList.contains('open'))closeSettings();if(document.getElementById('ideas-modal')?.classList.contains('open'))closeProductIdeas();if(document.getElementById('privacy-modal')?.classList.contains('open'))closePrivacy();if(document.getElementById('onboarding-modal')?.classList.contains('open')){closeOnboarding();if(!state.settings.userRole)state.settings.userRole='ip';state.settings.onboardingDone=true;save();}}});
 
 /* INTERACTIONS */
 function togglePhase(phaseId){if(state.phaseCollapsed.has(phaseId))state.phaseCollapsed.delete(phaseId);else state.phaseCollapsed.add(phaseId);save();render();}
@@ -4192,8 +4193,9 @@ function getGestationalWeek() {
 function getPhasePool(phase) {
   let pool = LIBRARY_CARDS.filter(c => c.phase === phase);
 
-  // Surrogacy-track gate (existing)
-  if (!isSurrogacyPath(state.settings.familyPath)) {
+  // Surrogacy-track gate — also excludes for partner (cards are IP-perspective)
+  const isPartnerUser=(state.settings||{}).userRole==='partner';
+  if (!isSurrogacyPath(state.settings.familyPath) || isPartnerUser) {
     pool = pool.filter(c => c.track !== 'Surrogacy');
   }
 
@@ -4539,7 +4541,8 @@ function renderNudge() {
     </div>`;
     return;
   }
-  if (!transferSet) {
+  const isPartnerRole=((state.settings||{}).userRole==='partner');
+  if (!transferSet && !isPartnerRole) {
     wrap.innerHTML = `<div class="nudge settings-nudge" onclick="openSettings()">
       <div class="nudge-icon">⚙</div>
       <div>Set your transfer date so cards switch to the pregnancy series automatically.</div>
@@ -4651,7 +4654,7 @@ function openSettings(){
   document.getElementById('s-partner').value=s.partnerName||'';
   document.getElementById('s-baby').value=s.babyNickname||'';
   document.getElementById('s-gcname').value=s.gcName||'';
-  document.getElementById('s-path').value=s.familyPath||'gestational-surrogacy';
+  document.getElementById('s-path').value=(s.userRole==='partner')?'gestational-surrogacy':(s.familyPath||'gestational-surrogacy');
   document.getElementById('s-duedate').value=s.dueDateStr||'2027-05-10';
   document.getElementById('s-phase').value=s.currentPhase||'pre-transfer';
   const td=document.getElementById('s-transferdate');
@@ -4660,6 +4663,8 @@ function openSettings(){
   document.getElementById('import-preview').style.display='none';
   renderSnapshotsList();
   toggleGCField(s.familyPath||'gestational-surrogacy');
+  const journeySec=document.getElementById('settings-journey-section');
+  if(journeySec)journeySec.style.display=(s.userRole==='partner')?'none':'';
   renderAccountSection();
   renderSituationProfile();
   document.getElementById('settings-backdrop').classList.add('open');
@@ -4672,7 +4677,8 @@ function closeSettings(){
 function toggleGCField(path){
   const surrogacyPaths=['gestational-surrogacy','traditional-surrogacy'];
   const row=document.getElementById('s-gcname')?.closest('.settings-row');
-  if(row)row.style.display=surrogacyPaths.includes(path)?'':'none';
+  const isPartner=(state.settings||{}).userRole==='partner';
+  if(row)row.style.display=(surrogacyPaths.includes(path)&&!isPartner)?'':'none';
 }
 function previewSettings(){
   // live preview not needed — save on button click
@@ -4721,13 +4727,23 @@ function renderSituationProfile(){
     if(bb[2])bb[2].classList.toggle('active',s.birthAttendance==='not-attending');}
   ab('s-content-legal',!mt.includes('Legal'));
   ab('s-content-anxiety',!ms.includes('anxiety-content'));
+  const isPartner=s.userRole==='partner';
   const gcDistField=document.getElementById('s-gc-dist')?.closest('.settings-situation-field');
-  if(gcDistField)gcDistField.style.display=isSurrogacyPath(s.familyPath)?'':'none';
+  if(gcDistField)gcDistField.style.display=(isSurrogacyPath(s.familyPath)&&!isPartner)?'':'none';
+  const partneredRow=document.getElementById('s-partnered')?.closest('.settings-situation-field');
+  if(partneredRow)partneredRow.style.display=isPartner?'none':'';
 }
 function inferProfileFromOnboarding(){
   const s=state.settings||{};
   if(!state.questionLog)state.questionLog={};
   let mutated=false;
+  if(s.userRole==='partner'){
+    ['q-001','q-005'].forEach(qid=>{
+      if(!state.questionLog[qid]?.answered){state.questionLog[qid]={answered:todayStr(),update:{}};mutated=true;}
+    });
+    if(mutated)save();
+    return;
+  }
   if(s.partnerName&&s.isPartnered===null){
     s.isPartnered=true;
     if(!state.questionLog['q-005']||!state.questionLog['q-005'].answered)state.questionLog['q-005']={answered:todayStr(),update:{}};
@@ -4820,7 +4836,7 @@ function applySettings(){
   if(greet){
     const hour=new Date().getHours();
     const tod=hour<12?'morning':hour<17?'afternoon':'evening';
-    const name=s.name||'Dad';
+    const name=s.name||(s.userRole==='partner'?'there':'Dad');
     greet.innerHTML=`Good ${tod}, <em>${name}.</em>`;
   }
   const hubSub=document.querySelector('.hub-subtitle');
@@ -4844,7 +4860,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.15'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.16'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -4905,7 +4921,7 @@ function confirmImport(){
   state.readCardIds=d.readCardIds||[];
   state.dailyCardLog=d.dailyCardLog||{};
   state.hospitalBag=d.hospitalBag||initHospitalBag();
-  state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer'},d.settings||{});
+  state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',userRole:null,linkedIpUserId:null},d.settings||{});
   pendingImportData=null;
   save();
   render();
@@ -4951,7 +4967,7 @@ function restoreSnapshot(idx){
     state.readCardIds=d.readCardIds||[];
     state.dailyCardLog=d.dailyCardLog||{};
     state.hospitalBag=d.hospitalBag||initHospitalBag();
-    state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer'},d.settings||{});
+    state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',userRole:null,linkedIpUserId:null},d.settings||{});
     save();render();applySettings();renderTopbar();renderStreakStrip();renderHomeCard();renderNudge();renderLibHomeProgress();
     closeSettings();
     showToast('Snapshot restored — '+snaps[idx].date);
@@ -5349,7 +5365,10 @@ function renderBagHomeCount() {
 /* ── ONBOARDING ── */
 let obStep = 1;
 let obPath = 'gestational-surrogacy';
-const OB_TOTAL = 7;
+let obRole = null;
+const OB_TOTAL_IP = 8;
+const OB_TOTAL_PARTNER = 6;
+function obTotal(){ return obRole === 'partner' ? OB_TOTAL_PARTNER : OB_TOTAL_IP; }
 
 function checkOnboarding() {
   if (!state.settings.onboardingDone && !state.settings.name) {
@@ -5360,6 +5379,7 @@ function checkOnboarding() {
 function showOnboarding() {
   obStep = 1;
   obPath = state.settings.familyPath || 'gestational-surrogacy';
+  obRole = null;
   renderOnboardingStep();
   document.getElementById('onboarding-backdrop').classList.add('open');
   document.getElementById('onboarding-modal').classList.add('open');
@@ -5375,11 +5395,16 @@ function selectObPath(path) {
   onboardingNext();
 }
 
+function selectObRole(role) {
+  obRole = role;
+  onboardingNext();
+}
+
 function renderOnboardingStep() {
   const body = document.getElementById('onboarding-body');
   if (!body) return;
-  const dots = obStep > 1
-    ? `<div class="ob-dots">${Array.from({length:OB_TOTAL},(_,i)=>`<div class="ob-dot${i+1<obStep?' done':i+1===obStep?' active':''}"></div>`).join('')}</div>`
+  const dots = obStep > 2
+    ? `<div class="ob-dots">${Array.from({length:obTotal()},(_,i)=>`<div class="ob-dot${i+1<obStep?' done':i+1===obStep?' active':''}"></div>`).join('')}</div>`
     : '';
   const pathLabels = {'gestational-surrogacy':'Gestational surrogacy','traditional-surrogacy':'Traditional surrogacy','ivf':'IVF','natural':'Natural pregnancy'};
   const pathDescs = {'gestational-surrogacy':'GC carries your embryo','traditional-surrogacy':'GC also provides the egg','ivf':'Partner carries','natural':'No intervention'};
@@ -5390,42 +5415,71 @@ function renderOnboardingStep() {
   const transferRow = showTransfer ? `<div class="ob-label" style="margin-top:16px;">Transfer date? <span class="ob-sublabel">(optional)</span></div><input class="ob-input ob-date" id="ob-transfer" type="date" /><label class="ob-unknown-label"><input type="checkbox" id="ob-transfer-unknown" onchange="document.getElementById('ob-transfer').disabled=this.checked" /> I don't know yet</label>` : '';
   const namePart = state.settings.name ? `, <em>${state.settings.name}.</em>` : '.';
   const pathName = pathLabels[obPath] || 'your path';
-  const steps = {
-    1: `<div class="ob-welcome"><div class="ob-icon">◉</div><h2 class="ob-title">Welcome to<br><em>Daddy Duty.</em></h2><p class="ob-sub">Let's set you up. Takes 60 seconds.</p><button class="card-btn primary ob-cta" onclick="onboardingNext()">Get started →</button></div>`,
-    2: `<div class="ob-step"><div class="ob-label">How are you becoming a parent?</div><div class="ob-path-list">${pathOptions}</div></div>`,
-    3: `<div class="ob-step"><div class="ob-label">What should we call you?</div><input class="ob-input" id="ob-name" type="text" placeholder="Grant" /><button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button><div class="ob-skip" onclick="onboardingNext()">Skip</div></div>`,
-    4: `<div class="ob-step"><div class="ob-label">Partner's name?</div><input class="ob-input" id="ob-partner" type="text" placeholder="e.g. Sarah" /><div class="ob-label" style="margin-top:16px;">Baby's nickname?</div><input class="ob-input" id="ob-baby" type="text" placeholder="e.g. Peanut" /><button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button><div class="ob-skip" onclick="onboardingNext()">Skip</div></div>`,
-    5: `<div class="ob-step"><div class="ob-label">Your gestational carrier's name?</div><div class="ob-sublabel" style="margin-bottom:8px;">Personalizes task labels throughout the app.</div><input class="ob-input" id="ob-gc" type="text" placeholder="e.g. Jessica" /><button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button><div class="ob-skip" onclick="onboardingNext()">Skip</div></div>`,
-    6: `<div class="ob-step"><div class="ob-label">Due date?</div><input class="ob-input ob-date" id="ob-due" type="date" value="2027-05-10" />${transferRow}<button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button></div>`,
-    7: `<div class="ob-welcome"><div style="font-size:2.5rem">🎉</div><h2 class="ob-title">You're all set${namePart}</h2><p class="ob-sub">Your app is set up for ${pathName}. Change this anytime in Settings.</p><button class="card-btn primary ob-cta" onclick="onboardingDone()">Open the app →</button></div>`,
-  };
-  body.innerHTML = dots + (steps[obStep] || '');
+
+  if (obStep === 1) {
+    body.innerHTML = `<div class="ob-welcome"><div class="ob-icon">◉</div><h2 class="ob-title">Welcome to<br><em>Daddy Duty.</em></h2><p class="ob-sub">Let's set you up. Takes 60 seconds.</p><button class="card-btn primary ob-cta" onclick="onboardingNext()">Get started →</button></div>`;
+    return;
+  }
+  if (obStep === 2) {
+    body.innerHTML = dots + `<div class="ob-step"><div class="ob-label">How are you connected to this journey?</div><div class="ob-path-list"><div class="ob-path-card${obRole==='ip'?' selected':''}" onclick="selectObRole('ip')"><div class="ob-path-label">Intended parent / father</div><div class="ob-path-desc">I'm the dad bringing this child home</div></div><div class="ob-path-card${obRole==='partner'?' selected':''}" onclick="selectObRole('partner')"><div class="ob-path-label">Co-parent / partner</div><div class="ob-path-desc">I'm the other parent in this journey</div></div></div></div>`;
+    return;
+  }
+
+  let html = '';
+  if (obRole === 'partner') {
+    const steps = {
+      3: `<div class="ob-step"><div class="ob-label">What should we call you?</div><input class="ob-input" id="ob-name" type="text" placeholder="e.g. Lauren" /><button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button><div class="ob-skip" onclick="onboardingNext()">Skip</div></div>`,
+      4: `<div class="ob-step"><div class="ob-label">Baby's nickname?</div><div class="ob-sublabel" style="margin-bottom:8px;">Optional — used throughout the app.</div><input class="ob-input" id="ob-baby" type="text" placeholder="e.g. Peanut" /><button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button><div class="ob-skip" onclick="onboardingNext()">Skip</div></div>`,
+      5: `<div class="ob-step"><div class="ob-label">When is the baby due?</div><input class="ob-input ob-date" id="ob-due" type="date" value="2027-05-10" /><button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button></div>`,
+      6: `<div class="ob-welcome"><div style="font-size:2.5rem">🎉</div><h2 class="ob-title">You're all set${namePart}</h2><p class="ob-sub">Your app is ready. Journal, library, shopping, hospital bag — all yours. Change anything in Settings.</p><button class="card-btn primary ob-cta" onclick="onboardingDone()">Open the app →</button></div>`,
+    };
+    html = steps[obStep] || '';
+  } else {
+    const steps = {
+      3: `<div class="ob-step"><div class="ob-label">How are you becoming a parent?</div><div class="ob-path-list">${pathOptions}</div></div>`,
+      4: `<div class="ob-step"><div class="ob-label">What should we call you?</div><input class="ob-input" id="ob-name" type="text" placeholder="Grant" /><button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button><div class="ob-skip" onclick="onboardingNext()">Skip</div></div>`,
+      5: `<div class="ob-step"><div class="ob-label">Partner's name?</div><input class="ob-input" id="ob-partner" type="text" placeholder="e.g. Sarah" /><div class="ob-label" style="margin-top:16px;">Baby's nickname?</div><input class="ob-input" id="ob-baby" type="text" placeholder="e.g. Peanut" /><button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button><div class="ob-skip" onclick="onboardingNext()">Skip</div></div>`,
+      6: `<div class="ob-step"><div class="ob-label">Your gestational carrier's name?</div><div class="ob-sublabel" style="margin-bottom:8px;">Personalizes task labels throughout the app.</div><input class="ob-input" id="ob-gc" type="text" placeholder="e.g. Jessica" /><button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button><div class="ob-skip" onclick="onboardingNext()">Skip</div></div>`,
+      7: `<div class="ob-step"><div class="ob-label">Due date?</div><input class="ob-input ob-date" id="ob-due" type="date" value="2027-05-10" />${transferRow}<button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button></div>`,
+      8: `<div class="ob-welcome"><div style="font-size:2.5rem">🎉</div><h2 class="ob-title">You're all set${namePart}</h2><p class="ob-sub">Your app is set up for ${pathName}. Change this anytime in Settings.</p><button class="card-btn primary ob-cta" onclick="onboardingDone()">Open the app →</button></div>`,
+    };
+    html = steps[obStep] || '';
+  }
+
+  body.innerHTML = dots + html;
   setTimeout(() => body.querySelector('input:not([type=checkbox]):not([type=date])')?.focus(), 60);
 }
 
 function onboardingNext() {
-  if (obStep === 3) { const v = document.getElementById('ob-name')?.value.trim(); if (v) state.settings.name = v; }
-  else if (obStep === 4) {
-    const p = document.getElementById('ob-partner')?.value.trim();
-    const b = document.getElementById('ob-baby')?.value.trim();
-    if (p) state.settings.partnerName = p;
-    if (b) state.settings.babyNickname = b;
-  }
-  else if (obStep === 5) { const g = document.getElementById('ob-gc')?.value.trim(); if (g) state.settings.gcName = g; }
-  else if (obStep === 6) {
-    const due = document.getElementById('ob-due');
-    const transfer = document.getElementById('ob-transfer');
-    const unknown = document.getElementById('ob-transfer-unknown');
-    if (due?.value) state.settings.dueDateStr = due.value;
-    if (unknown?.checked) state.settings.transferDateStr = 'unknown';
-    else if (transfer?.value) state.settings.transferDateStr = transfer.value;
-  }
-  if (obStep === 4 && !isSurrogacyPath(obPath)) {
-    obStep = 6;
-  } else {
+  if (obRole === 'partner') {
+    if (obStep === 3) { const v = document.getElementById('ob-name')?.value.trim(); if (v) state.settings.name = v; }
+    else if (obStep === 4) { const b = document.getElementById('ob-baby')?.value.trim(); if (b) state.settings.babyNickname = b; }
+    else if (obStep === 5) { const due = document.getElementById('ob-due'); if (due?.value) state.settings.dueDateStr = due.value; }
     obStep++;
+  } else {
+    if (obStep === 4) { const v = document.getElementById('ob-name')?.value.trim(); if (v) state.settings.name = v; }
+    else if (obStep === 5) {
+      const p = document.getElementById('ob-partner')?.value.trim();
+      const b = document.getElementById('ob-baby')?.value.trim();
+      if (p) state.settings.partnerName = p;
+      if (b) state.settings.babyNickname = b;
+    }
+    else if (obStep === 6) { const g = document.getElementById('ob-gc')?.value.trim(); if (g) state.settings.gcName = g; }
+    else if (obStep === 7) {
+      const due = document.getElementById('ob-due');
+      const transfer = document.getElementById('ob-transfer');
+      const unknown = document.getElementById('ob-transfer-unknown');
+      if (due?.value) state.settings.dueDateStr = due.value;
+      if (unknown?.checked) state.settings.transferDateStr = 'unknown';
+      else if (transfer?.value) state.settings.transferDateStr = transfer.value;
+    }
+    if (obStep === 5 && !isSurrogacyPath(obPath)) {
+      obStep = 7;
+    } else {
+      obStep++;
+    }
   }
-  if (obStep > OB_TOTAL) { onboardingDone(); return; }
+  if (obStep > obTotal()) { onboardingDone(); return; }
   renderOnboardingStep();
 }
 
@@ -5441,7 +5495,12 @@ function onboardingDone() {
   if(p?.value.trim())state.settings.partnerName=p.value.trim();
   if(b?.value.trim())state.settings.babyNickname=b.value.trim();
   if(g?.value.trim())state.settings.gcName=g.value.trim();
-  state.settings.familyPath = obPath;
+  state.settings.userRole = obRole || 'ip';
+  if (obRole === 'partner') {
+    state.settings.familyPath = 'gestational-surrogacy';
+  } else {
+    state.settings.familyPath = obPath;
+  }
   state.settings.onboardingDone = true;
   inferProfileFromOnboarding();
   save();
@@ -5511,7 +5570,7 @@ window.addEventListener('unhandledrejection',function(e){
 <div class="picker-modal" id="onboarding-modal" style="max-width:480px;">
   <div class="picker-header" style="border-bottom:none;padding-bottom:4px;">
     <div></div>
-    <button class="picker-close" aria-label="Close" onclick="closeOnboarding();state.settings.onboardingDone=true;save();"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></button>
+    <button class="picker-close" aria-label="Close" onclick="closeOnboarding();if(!state.settings.userRole)state.settings.userRole='ip';state.settings.onboardingDone=true;save();"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></button>
   </div>
   <div style="padding:4px 32px 32px;" id="onboarding-body"></div>
 </div>
