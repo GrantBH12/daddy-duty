@@ -1056,6 +1056,21 @@
   .task.pinned .task-star .icon{ fill:var(--honey); }
   .bexpand-icon{ display:flex; align-items:center; justify-content:center; }
   .gear-btn .icon{ width:19px; height:19px; }
+
+  /* ── Privacy & Terms modal + auth-screen links ────────────────────────────────── */
+  .privacy-content { overflow-y:auto; padding:0 24px 24px; flex-grow:1; }
+  .privacy-section { margin-bottom:24px; }
+  .privacy-section h4 { font-family:var(--font-display); font-weight:500; font-size:var(--fs-h4); margin:0 0 8px; color:var(--ink); }
+  .privacy-section p,.privacy-section ul { font-size:13px; color:var(--ink-soft); line-height:1.65; margin:0 0 10px; padding-left:0; }
+  .privacy-section ul { padding-left:18px; }
+  .privacy-section li { margin-bottom:4px; }
+  .privacy-section strong { color:var(--ink); font-weight:500; }
+  .privacy-updated { font-size:11px; color:var(--ink-muted); font-family:var(--font-mono); margin-top:24px; }
+  .auth-links { margin-top:10px; display:flex; gap:8px; justify-content:center; align-items:center; }
+  .auth-link-btn { background:none; border:none; font-size:11px; color:var(--ink-muted); font-family:var(--font-mono); cursor:pointer; padding:2px 4px; transition:color .15s; }
+  .auth-link-btn:hover { color:var(--terra); }
+  .settings-privacy-link { background:none; border:none; font-size:11px; color:var(--ink-muted); font-family:var(--font-mono); cursor:pointer; padding:0; transition:color .15s; }
+  .settings-privacy-link:hover { color:var(--terra); }
 </style>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'><circle cx='8' cy='8' r='6' stroke='%23c97156' stroke-width='2'/></svg>"/>
 <script>if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js")</script>
@@ -1114,7 +1129,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v4.13 · cloud sync</span>
+      <span class="brand-meta">v4.14 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1586,11 +1601,18 @@
         <div style="font-size:12px;color:var(--ink-soft);">Reset all tasks, journal entries, budget, and progress to the original defaults. Cannot be undone without a backup.</div>
         <button class="tiny-btn danger" onclick="restoreDefaults()" style="font-size:11px;">Reset to defaults</button>
       </div>
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px;margin-top:12px;">
+        <div style="font-size:12px;color:var(--ink-soft);">Permanently delete your account, all cloud-synced data, and sign out. Cannot be undone.</div>
+        <button class="tiny-btn danger" onclick="deleteAccount()" style="font-size:11px;">Delete my account &amp; all data</button>
+      </div>
     </div>
 
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--rule);">
-      <button class="tiny-btn" onclick="closeSettings()">Cancel</button>
-      <button class="tiny-btn primary" onclick="saveSettings()">Save settings</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--rule);">
+      <button class="settings-privacy-link" onclick="showPrivacy()">Privacy &amp; Terms</button>
+      <div style="display:flex;gap:10px;">
+        <button class="tiny-btn" onclick="closeSettings()">Cancel</button>
+        <button class="tiny-btn primary" onclick="saveSettings()">Save settings</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1810,6 +1832,34 @@ async function signOut() {
   const sb = getSB();
   if (!sb) return;
   await sb.auth.signOut();
+}
+
+function showPrivacy() {
+  document.getElementById('privacy-backdrop').classList.add('open');
+  document.getElementById('privacy-modal').classList.add('open');
+}
+
+function closePrivacy() {
+  document.getElementById('privacy-backdrop').classList.remove('open');
+  document.getElementById('privacy-modal').classList.remove('open');
+}
+
+async function deleteAccount() {
+  if (!confirm('This will permanently delete all your cloud data and sign you out. Local data on this device will also be cleared. This cannot be undone. Continue?')) return;
+  showToast('Deleting your data...');
+  const sb = getSB();
+  if (sb && _authUser) {
+    try {
+      await sb.from('user_app_data').delete().eq('user_id', _authUser.id);
+    } catch(e) { console.error('Delete data error:', e); }
+    try {
+      await sb.auth.signOut();
+    } catch(e) { console.error('Sign out error:', e); }
+  }
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem('firstdad.snapshots');
+  localStorage.removeItem(LEGACY_KEY_V22);
+  window.location.reload();
 }
 
 function renderAccountSection() {
@@ -2248,7 +2298,7 @@ function renderPickerOption(type,item){
   return'';
 }
 function closePicker(){document.getElementById('picker-backdrop').classList.remove('open');document.getElementById('picker-modal').classList.remove('open');pickerCtx={taskId:null,type:null};}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('picker-modal')?.classList.contains('open'))closePicker();if(document.getElementById('settings-modal')?.classList.contains('open'))closeSettings();if(document.getElementById('ideas-modal')?.classList.contains('open'))closeProductIdeas();if(document.getElementById('onboarding-modal')?.classList.contains('open')){closeOnboarding();state.settings.onboardingDone=true;save();}}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('picker-modal')?.classList.contains('open'))closePicker();if(document.getElementById('settings-modal')?.classList.contains('open'))closeSettings();if(document.getElementById('ideas-modal')?.classList.contains('open'))closeProductIdeas();if(document.getElementById('privacy-modal')?.classList.contains('open'))closePrivacy();if(document.getElementById('onboarding-modal')?.classList.contains('open')){closeOnboarding();state.settings.onboardingDone=true;save();}}});
 
 /* INTERACTIONS */
 function togglePhase(phaseId){if(state.phaseCollapsed.has(phaseId))state.phaseCollapsed.delete(phaseId);else state.phaseCollapsed.add(phaseId);save();render();}
@@ -4794,7 +4844,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.13'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.14'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -5475,6 +5525,52 @@ window.addEventListener('unhandledrejection',function(e){
     <button class="auth-btn" id="auth-submit-btn" onclick="sendMagicLink()">Send magic link &rarr;</button>
     <div class="auth-msg" id="auth-msg"></div>
     <div class="auth-fine">firstdad.app &middot; private &amp; secure</div>
+    <div class="auth-links">
+      <button class="auth-link-btn" onclick="showPrivacy()">Privacy Policy</button>
+      <span style="color:var(--ink-muted);font-size:11px;">&middot;</span>
+      <button class="auth-link-btn" onclick="showPrivacy()">Terms of Use</button>
+    </div>
+  </div>
+</div>
+<div class="picker-backdrop" id="privacy-backdrop" onclick="closePrivacy()"></div>
+<div class="picker-modal" id="privacy-modal" style="max-width:560px;">
+  <div class="picker-header">
+    <h3>Privacy <em>&amp; Terms</em></h3>
+    <button class="picker-close" aria-label="Close" onclick="closePrivacy()"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></button>
+  </div>
+  <div class="privacy-content">
+    <div class="privacy-section">
+      <h4>Privacy Policy</h4>
+      <p><strong>What we collect</strong></p>
+      <ul>
+        <li>Your email address — used only for sign-in via magic link. Never shared.</li>
+        <li>Information you enter: your name, baby nickname, partner name, GC name, due date, journal entries, tasks, budget, and shopping data.</li>
+        <li>Anonymous usage events (card track and phase read) via Plausible Analytics — cookieless, no personal data collected.</li>
+      </ul>
+      <p><strong>How it's stored</strong></p>
+      <p>Your data is stored in your browser's localStorage and in Supabase (encrypted at rest). Row Level Security ensures only your authenticated session can read or modify your data. No one else can access it.</p>
+      <p><strong>What we do — and don't do — with your data</strong></p>
+      <ul>
+        <li>We do not sell, share, or use your data for advertising.</li>
+        <li>We do not read your journal or personal entries.</li>
+        <li>Your data is yours. Export it any time from Settings → Backup &amp; restore.</li>
+      </ul>
+      <p><strong>Deleting your data</strong></p>
+      <p>Use Settings → Danger zone → “Delete my account &amp; all data” to permanently remove your cloud data and sign out. Or email <strong>granthansell@gmail.com</strong>.</p>
+      <p><strong>Analytics</strong></p>
+      <p>Plausible Analytics logs which cards you read (track and phase only — no personal identifiers). No cookies. No cross-site tracking.</p>
+      <p class="privacy-updated">Last updated: June 2026</p>
+    </div>
+    <div class="privacy-section" style="border-top:1px solid var(--rule);padding-top:20px;">
+      <h4>Terms of Use</h4>
+      <ul>
+        <li><strong>Not medical advice.</strong> Content is for general informational purposes only. Always consult licensed medical, legal, and financial professionals for decisions affecting your health, family, or finances.</li>
+        <li><strong>Private &amp; invite-only.</strong> This app is currently for personally invited users only. Sharing access is not permitted without permission.</li>
+        <li><strong>No warranties.</strong> The app is provided as-is. We make no guarantees about accuracy, completeness, or availability.</li>
+        <li><strong>Your data.</strong> Everything you enter belongs to you. You can export or delete it at any time.</li>
+      </ul>
+      <p style="font-size:12px;color:var(--ink-muted);">Questions? <strong>granthansell@gmail.com</strong></p>
+    </div>
   </div>
 </div>
 </body>
