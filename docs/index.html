@@ -501,7 +501,7 @@
   .attach-meta .field{display:inline-block;margin-right:10px;outline:none;}
   .attach-meta .field-val{color:var(--ink-soft);}
   .attach-meta .field-val.empty{color:var(--ink-muted);font-style:italic;}
-  .attach-remove{color:var(--ink-muted);cursor:pointer;font-size:13px;padding:4px 6px;opacity:0;transition:opacity .15s;border-radius:var(--r-xs);flex-shrink:0;}
+  .attach-remove{color:var(--ink-muted);cursor:pointer;font-size:13px;padding:6px 8px;opacity:0;transition:opacity .15s;border-radius:var(--r-xs);flex-shrink:0;}
   .attach-row:hover .attach-remove{opacity:1;}
   .attach-remove:hover{color:var(--terracotta);background:var(--cream-deep);}
   .add-attach-row{margin-top:6px;position:relative;}
@@ -1129,7 +1129,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v4.14 · cloud sync</span>
+      <span class="brand-meta">v4.15 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -2197,7 +2197,7 @@ function renderTask(t){
 }
 
 function renderExpanded(t){
-  const sh=t.steps.map((s,i)=>`<li class="step-row ${s.done?'done':''}"><div class="step-check" onclick="toggleStep('${t.id}',${i})">${s.done?"<svg class=\"icon\" aria-hidden=\"true\"><use href=\"#dd-check\"></use></svg>":''}</div><div class="step-text" contenteditable="true" onblur="editStep('${t.id}',${i},this.innerText)">${escapeHtml(s.text)}</div><div class="step-remove" role="button" aria-label="Remove step" onclick="removeStep('${t.id}',${i})"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></div></li>`).join('');
+  const sh=t.steps.map((s,i)=>`<li class="step-row ${s.done?'done':''}"><div class="step-check" role="checkbox" aria-checked="${s.done}" aria-label="Toggle step" onclick="toggleStep('${t.id}',${i})">${s.done?"<svg class=\"icon\" aria-hidden=\"true\"><use href=\"#dd-check\"></use></svg>":''}</div><div class="step-text" contenteditable="true" onblur="editStep('${t.id}',${i},this.innerText)">${escapeHtml(s.text)}</div><div class="step-remove" role="button" aria-label="Remove step" onclick="removeStep('${t.id}',${i})"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></div></li>`).join('');
   const po=PHASES.map(p=>`<option value="${p.id}" ${p.id===t.phase?'selected':''}>${p.label}</option>`).join('');
   const co=CATEGORIES.map(c=>`<option value="${c}" ${c===t.cat?'selected':''}>${c}</option>`).join('');
   return `<div class="task-expanded">
@@ -2241,9 +2241,9 @@ function escapeHtml(s){return(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function renderAttachments(t){const a=t.attachments||[];if(!a.length)return'<div style="font-size:12px;color:var(--ink-muted);font-style:italic;padding:4px 0;">Nothing attached yet.</div>';return`<ul class="attach-list">${a.map((r,i)=>renderAttachment(t.id,r,i)).join('')}</ul>`;}
 function renderAttachment(taskId,ref,i){
   const item=findItem(ref.type,ref.id);
-  if(!item)return`<li class="attach-row" style="opacity:.5;"><div class="attach-icon" style="background:var(--cream-deep);color:var(--ink-muted);">?</div><div class="attach-body"><div class="attach-primary" style="color:var(--ink-muted);font-style:italic;">Missing — removed from My Stuff</div></div><div class="attach-remove" style="opacity:1;" onclick="detachFromTask('${taskId}',${i})">✕</div></li>`;
+  if(!item)return`<li class="attach-row" style="opacity:.5;"><div class="attach-icon" style="background:var(--cream-deep);color:var(--ink-muted);">?</div><div class="attach-body"><div class="attach-primary" style="color:var(--ink-muted);font-style:italic;">Missing — removed from My Stuff</div></div><div class="attach-remove" role="button" aria-label="Remove attachment" style="opacity:1;" onclick="detachFromTask('${taskId}',${i})"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></div></li>`;
   if(ref.type==='link'||ref.type==='document'){const isDoc=ref.type==='document';const label=item.label||(isDoc?'Untitled document':'Untitled link');const url=item.url||'';const ph=isDoc?'paste document link…':'paste url…';const g=isDoc?'▤':'↗';return`<li class="attach-row ${ref.type}"><div class="attach-icon">${g}</div><div class="attach-body"><div class="attach-primary" contenteditable="true" onblur="editItem('${ref.type}','${ref.id}','label',this.innerText)">${escapeHtml(label)}</div><div class="attach-meta"><span class="field" style="flex-grow:1;"><span class="field-val ${url?'':'empty'}" contenteditable="true" onblur="editItem('${ref.type}','${ref.id}','url',this.innerText)">${escapeHtml(url||ph)}</span></span>${url?`<a href="${escapeHtml(url)}" target="_blank" rel="noopener" style="margin-left:8px;color:var(--terracotta-deep);font-weight:500;">Open ↗</a>`:''}</div></div><div class="attach-remove" onclick="detachFromTask('${taskId}',${i})" title="Remove from task"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></div></li>`;}
-  if(ref.type==='contact'){const name=item.name||'Untitled';const hp=!!item.phone,he=!!item.email;return`<li class="attach-row contact"><div class="attach-icon">◉</div><div class="attach-body"><div class="attach-primary" contenteditable="true" onblur="editItem('contact','${ref.id}','name',this.innerText)">${escapeHtml(name)}</div><div class="attach-meta"><span class="field"><span class="field-label">Role</span><span class="field-val ${item.role?'':'empty'}" contenteditable="true" onblur="editItem('contact','${ref.id}','role',this.innerText)">${escapeHtml(item.role||'—')}</span></span><span class="field"><span class="field-label">Phone</span>${hp?`<a href="tel:${escapeHtml(item.phone)}">${escapeHtml(item.phone)}</a>`:`<span class="field-val empty" contenteditable="true" onblur="editItem('contact','${ref.id}','phone',this.innerText)">—</span>`}</span><span class="field"><span class="field-label">Email</span>${he?`<a href="mailto:${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>`:`<span class="field-val empty" contenteditable="true" onblur="editItem('contact','${ref.id}','email',this.innerText)">—</span>`}</span></div></div><div class="attach-remove" onclick="detachFromTask('${taskId}',${i})">✕</div></li>`;}
+  if(ref.type==='contact'){const name=item.name||'Untitled';const hp=!!item.phone,he=!!item.email;return`<li class="attach-row contact"><div class="attach-icon">◉</div><div class="attach-body"><div class="attach-primary" contenteditable="true" onblur="editItem('contact','${ref.id}','name',this.innerText)">${escapeHtml(name)}</div><div class="attach-meta"><span class="field"><span class="field-label">Role</span><span class="field-val ${item.role?'':'empty'}" contenteditable="true" onblur="editItem('contact','${ref.id}','role',this.innerText)">${escapeHtml(item.role||'—')}</span></span><span class="field"><span class="field-label">Phone</span>${hp?`<a href="tel:${escapeHtml(item.phone)}">${escapeHtml(item.phone)}</a>`:`<span class="field-val empty" contenteditable="true" onblur="editItem('contact','${ref.id}','phone',this.innerText)">—</span>`}</span><span class="field"><span class="field-label">Email</span>${he?`<a href="mailto:${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>`:`<span class="field-val empty" contenteditable="true" onblur="editItem('contact','${ref.id}','email',this.innerText)">—</span>`}</span></div></div><div class="attach-remove" role="button" aria-label="Remove attachment" onclick="detachFromTask('${taskId}',${i})"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></div></li>`;}
   return'';
 }
 function editItem(type,id,field,value){const item=findItem(type,id);if(!item)return;const c=(value||'').trim();const ph=['paste url…','paste document link…','—'];item[field]=ph.includes(c.toLowerCase())?'':c;save();}
@@ -4844,7 +4844,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.14'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.15'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -5157,7 +5157,7 @@ function renderShopping(){
           ${linkHtml}
         </div>
       </div>
-      ${item.custom?`<div class="shop-item-remove" onclick="removeShoppingItem('${item.id}')">✕</div>`:''}
+      ${item.custom?`<div class="shop-item-remove" role="button" aria-label="Remove item" onclick="removeShoppingItem('${item.id}')"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></div>`:''}
     </div>`;
   }).join('');
   const addRow=`<div class="bag-add-row" style="margin-top:16px;"><div class="quick-add" id="shop-quick-add">
