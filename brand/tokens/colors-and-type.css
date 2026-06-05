@@ -1,0 +1,235 @@
+/* ═══════════════════════════════════════════════════════════════
+   Daddy Duty — Foundations
+   Colors, typography, spacing, radii, shadows, motion
+═══════════════════════════════════════════════════════════════ */
+
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap");
+
+:root {
+  /* ── Base palette ───────────────────────────────────── */
+  --cream:         #f5ede0;  /* primary background          */
+  --cream-deep:    #ece1cc;  /* cards, secondary surfaces   */
+  --cream-deeper:  #e0d2b6;  /* borders, dividers           */
+
+  --ink:           #2a2620;  /* primary text / dark bg      */
+  --ink-soft:      #57524a;  /* secondary text              */
+  --ink-muted:     #756d61;  /* captions, labels, meta — darkened from #8c8479 for AA legibility */
+
+  --terra:         #c97156;  /* primary accent — CTAs       */
+  --terra-deep:    #a85a42;  /* hover / emphasis            */
+  --terra-soft:    #e8b9a8;  /* tints, pills, soft bg       */
+
+  --sage:          #7a8b6b;  /* secondary — medical/verified*/
+  --sage-deep:     #5c6b4a;
+  --sage-soft:     #c5cfb8;
+
+  --honey:         #e8b547;  /* gamification, streak, XP    */
+  --peach:         #f0c4a8;  /* emotional, soft accent      */
+
+  /* ── Semantic foreground / background ───────────────── */
+  --bg:            var(--cream);
+  --bg-card:       var(--cream-deep);
+  --bg-elev:       #faf4e9;        /* slightly lighter than bg */
+  --bg-dark:       var(--ink);
+
+  --fg-1:          var(--ink);
+  --fg-2:          var(--ink-soft);
+  --fg-3:          var(--ink-muted);
+  --fg-on-dark-1:  var(--cream);
+  --fg-on-dark-2:  rgba(245,237,224,.65);
+  --fg-on-dark-3:  rgba(245,237,224,.4);
+
+  --accent:        var(--terra);
+  --accent-hover:  var(--terra-deep);
+  --accent-tint:   var(--terra-soft);
+
+  --border:        var(--cream-deeper);
+  --border-soft:   rgba(42,38,32,.08);
+  --border-on-dark:rgba(245,237,224,.12);
+  --rule:          rgba(42,38,32,.12);   /* hairline dividers */
+
+  /* ── Track / module colors (library) ────────────────── */
+  --track-bonding:    var(--honey);
+  --track-medical:    var(--sage);
+  --track-legal:      var(--terra);
+  --track-emotional:  var(--peach);
+  --track-surrogacy:  var(--sage-soft);
+  --track-self:       var(--cream-deeper);
+  --track-logistics:  #c8bfb0;
+
+  /* ── Category tag pairs (bg / fg) — single source for Tasks/Budget/Library ── */
+  --cat-legal-bg:#f0d4c4;      --cat-legal-fg:#9a4f33;
+  --cat-financial-bg:#f0dcc0;  --cat-financial-fg:#7c5e34;
+  --cat-medical-bg:#dce4f0;    --cat-medical-fg:#365780;
+  --cat-partner-bg:#f0cfdc;    --cat-partner-fg:#8a3d5e;
+  --cat-emotional-bg:#e6d8f0;  --cat-emotional-fg:#553781;
+  --cat-logistics-bg:#d8e9e0;  --cat-logistics-fg:#357d61;
+  --cat-self-bg:#f0e0d8;       --cat-self-fg:#7c5336;
+
+  /* ── Icon sizing steps ── */
+  --icon-sm: 14px;
+  --icon-md: 18px;
+  --icon-lg: 22px;
+
+  /* ── Type families ──────────────────────────────────── */
+  --font-display: "Fraunces", "Cormorant Garamond", Georgia, serif;
+  --font-body:    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono:    "IBM Plex Mono", "JetBrains Mono", "SF Mono", Menlo, monospace;
+
+  /* ── Type scale (responsive via clamp) ──────────────── */
+  --fs-display:   clamp(3rem, 6vw, 5rem);     /* hero wordmark         */
+  --fs-h1:        clamp(2.25rem, 4.5vw, 4rem);
+  --fs-h2:        clamp(1.75rem, 3.2vw, 2.75rem);
+  --fs-h3:        clamp(1.25rem, 2.2vw, 1.75rem);
+  --fs-h4:        clamp(1.05rem, 1.6vw, 1.25rem);
+  --fs-body:      clamp(14px, 1.1vw, 16px);
+  --fs-small:     13px;
+  --fs-caption:   12px;
+  --fs-eyebrow:   10px;   /* mono, uppercase, letterspaced */
+  --fs-stat:      clamp(2.5rem, 5vw, 4.5rem);
+
+  --lh-tight:     1.15;
+  --lh-display:   1.2;
+  --lh-body:      1.65;
+  --lh-loose:     1.75;
+
+  --tracking-eyebrow: 0.14em;
+  --tracking-mono:    0.08em;
+  --tracking-display: -0.02em;
+
+  /* ── Spacing scale (8pt-ish, organic) ───────────────── */
+  --sp-0:  0;
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-7:  32px;
+  --sp-8:  40px;
+  --sp-9:  56px;
+  --sp-10: 80px;
+  --sp-11: 120px;
+
+  /* ── Radii ──────────────────────────────────────────── */
+  --r-xs:    4px;
+  --r-sm:    8px;
+  --r-md:    12px;
+  --r-lg:    16px;
+  --r-xl:    24px;
+  --r-pill:  999px;
+
+  /* ── Shadows (warm, low-saturation) ─────────────────── */
+  --shadow-sm:  0 1px 2px rgba(42,38,32,.06);
+  --shadow-md:  0 4px 14px rgba(42,38,32,.08);
+  --shadow-lg:  0 10px 32px rgba(42,38,32,.12);
+  --shadow-terra: 0 4px 20px rgba(201,113,86,.3);
+  --shadow-xl:  0 20px 60px rgba(42,38,32,.25);   /* modals / overlays */
+
+  /* ── Motion ─────────────────────────────────────────── */
+  --ease-out:    cubic-bezier(.2,.7,.2,1);
+  --ease-in-out: cubic-bezier(.5,0,.3,1);
+  --dur-fast:    120ms;
+  --dur-base:    200ms;
+  --dur-slow:    360ms;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Base element styles
+═══════════════════════════════════════════════════════════════ */
+
+html, body {
+  background: var(--bg);
+  color: var(--fg-1);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 300;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--lh-tight);
+  color: var(--fg-1);
+}
+h1 { font-size: var(--fs-h1); }
+h2 { font-size: var(--fs-h2); }
+h3 { font-size: var(--fs-h3); }
+h4 { font-size: var(--fs-h4); }
+
+h1 em, h2 em, h3 em, h4 em {
+  font-style: italic;
+  color: var(--terra);
+}
+
+p {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--fg-2);
+  text-wrap: pretty;
+}
+strong { color: var(--fg-1); font-weight: 600; }
+a { color: var(--terra); text-decoration: underline; text-underline-offset: 3px; }
+a:hover { color: var(--terra-deep); }
+
+/* ── Semantic utility classes ───────────────────────────── */
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-eyebrow);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.eyebrow--light { color: var(--fg-on-dark-3); }
+
+.mono {
+  font-family: var(--font-mono);
+  letter-spacing: var(--tracking-mono);
+}
+
+.stat {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--fs-stat);
+  line-height: 1;
+  color: var(--terra);
+}
+
+.rule {
+  width: 40px;
+  height: 2px;
+  background: var(--terra);
+  border: 0;
+  margin: var(--sp-5) 0;
+}
+.rule--sage { background: var(--sage); }
+
+.tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: var(--tracking-mono);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.tag--terra { background: var(--terra-soft); color: var(--terra-deep); }
+.tag--sage  { background: var(--sage-soft);  color: var(--sage-deep);  }
+.tag--honey { background: #fef3c7;          color: #92400e;            }
+.tag--cream { background: rgba(245,237,224,.12); color: rgba(245,237,224,.6); }
+
+/* ── Layout helpers ─────────────────────────────────────── */
+
+.dark-surface {
+  background: var(--ink);
+  color: var(--fg-on-dark-1);
+}
+.dark-surface p   { color: var(--fg-on-dark-2); }
+.dark-surface h1, .dark-surface h2, .dark-surface h3, .dark-surface h4 { color: var(--cream); }
+.dark-surface h1 em, .dark-surface h2 em, .dark-surface h3 em { color: var(--terra-soft); }
