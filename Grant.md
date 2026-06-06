@@ -36,7 +36,7 @@ Pre-populated baby gear items organized into buying tiers (essential, recommende
 A packing checklist with four tabs: Dad, Partner, Baby, Documents. All items checkable. Pre-populated with a surrogacy-aware item set (e.g., pre-birth order in the documents tab).
 
 ### Module 05 — Knowledge Library
-The intellectual core of the app. A curated card library of research-backed parenting and surrogacy content, organized by pregnancy phase. One card surfaces per day on the home screen; you can browse the full library and navigate back through previous days. Reading a card earns XP and builds your streak. **191 cards as of v4.2; goal is 365 (one per day for a full year).**
+The intellectual core of the app. A curated card library of research-backed parenting and surrogacy content, organized by pregnancy phase. One card surfaces per day on the home screen; you can browse the full library and navigate back through previous days. Reading a card earns XP and builds your streak. **191 cards as of v5.1; goal is 365 (one per day for a full year).**
 
 ### Module 06 — Journal
 A private, in-app journal. Supports free writing and prompted entries. The app nudges you with prompts when you haven't written recently. Entries are timestamped and browseable.
@@ -126,14 +126,14 @@ Edit source file → run build script → git push → live in ~60 seconds
 ```
 
 More specifically:
-1. The current source file (`daddy-duty-v4_2.html`) is the "working copy"
+1. The current source file (`daddy-duty-v5_1.html`) is the "working copy"
 2. A new Python build script (`tools/build_vX_X.py`) reads the previous version, applies patches, injects credentials from `.env`, writes the new version file, copies it to `docs/index.html`, and pushes to GitHub
 3. GitHub Pages serves `docs/index.html` automatically
 
 ### Version numbering
-- Major.minor versions (v2.x, v3.x, v4.x) represent significant feature additions or redesigns
+- Major.minor versions (v2.x, v3.x, v4.x, v5.x) represent significant feature additions or redesigns
 - Patch versions (v3.9.1) represent bug fixes without new features
-- Current: **v4.2**
+- Current: **v5.1**
 
 ### The `.env` file
 Lives at `Daddy Duty/.env` and is gitignored (never committed). Contains:
@@ -166,7 +166,7 @@ Each card has:
 
 Surrogacy-track cards are hidden for non-surrogacy family paths; all other tracks show for all paths.
 
-### Current count (v4.2 — 191 cards)
+### Current count (v5.1 — 191 cards)
 
 | Phase | Current | Target | Gap |
 |-------|---------|--------|-----|
@@ -233,15 +233,12 @@ The app has a full branded design system living in `brand/`.
 - ✓ Tag system (milestone suppression + behavioral filters)
 - ✓ Daily questions (setup + milestone check-ins)
 - ✓ Card promoted to primary hero (v4.2 home redesign)
+- ✓ Partner mode (v5.0): family code linking, per-item visibility, partner view of shared content
+- ✓ Situation-aware dynamic content (v5.1): task suppression, situation-specific journal prompts
 
 ### Near-term
 - Expand library from 191 → 365 cards (174 remaining; newborn phase is priority)
 - Partner label personalization ("Parenthood Toolkit" section name via user settings)
-
-### Phase C — Partner Mode (Lauren)
-- Lauren gets a shared household view via Supabase Realtime
-- Shared state on tasks, shopping, hospital bag
-- Separate journal (private per user)
 
 ### Phase D — GC Mode (Katelyn)
 - Restricted view: no financial data, no journal
@@ -282,7 +279,7 @@ Go to Supabase → Authentication → URL Configuration. Confirm:
 
 ```
 Daddy Duty/
-├── daddy-duty-v4_2.html               Current canonical source — never edit docs/index.html directly
+├── daddy-duty-v5_1.html               Current canonical source — never edit docs/index.html directly
 ├── daddy-duty-card-reference.html     Sourced card library with citation metadata
 ├── daddy-duty-question-reference.html Daily question reference (authoritative for DAILY_QUESTIONS)
 ├── daddy-duty-task-reference.html     Task/to-do reference
@@ -291,7 +288,7 @@ Daddy Duty/
 │   ├── index.html                     Live deployed file — auto-generated, never hand-edit
 │   └── manifest.json                  PWA manifest — auto-generated
 ├── tools/
-│   └── build_v4_2.py                  Current build + deploy script
+│   └── build_v5_1.py                  Current build + deploy script
 ├── brand/
 │   ├── brand-standards.md             Human-readable design reference
 │   ├── tokens/colors-and-type.css     CSS custom properties (injected at build)
@@ -320,4 +317,4 @@ The app and all documentation use specific language intentionally:
 
 ---
 
-*Last updated: June 2026 · v4.2*
+*Last updated: June 2026 · v5.1*
