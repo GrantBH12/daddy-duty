@@ -965,6 +965,22 @@
   .sync-dot.pending{background:var(--honey,#e8b547);animation:sync-pulse .9s ease-in-out infinite;}
   .sync-dot.offline{background:var(--ink-muted);}
   @keyframes sync-pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  /* ── Partner mode ── */
+  .partner-shared-section{margin-bottom:20px;padding:12px 14px;background:color-mix(in srgb,var(--sage) 10%,transparent);border:1px solid color-mix(in srgb,var(--sage) 30%,transparent);border-radius:var(--r-lg);}
+  .partner-shared-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--sage-deep,#4a5c3b);margin-bottom:10px;}
+  .partner-readonly{pointer-events:none;opacity:.85;}
+  .partner-readonly a{pointer-events:auto;}
+  .vis-toggle{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:var(--ink-muted);user-select:none;}
+  .vis-toggle input{display:none;}
+  .vis-label{font-family:var(--font-mono);font-size:11px;}
+  /* ── Auth tabs ── */
+  .auth-tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--cream-deep,#ece4d3);border-radius:8px;padding:3px;}
+  .auth-tab{flex:1;padding:7px 8px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink-muted);background:none;border:none;cursor:pointer;transition:all .15s;}
+  .auth-tab.active{background:var(--cream,#f5ede0);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  /* ── Restore spinner ── */
+  .auth-spinner{width:24px;height:24px;border:2px solid var(--ink-muted);border-top-color:var(--terracotta);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
 </style>
 <style id="tier2-refinements">
   /* ============================================================
@@ -1129,7 +1145,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v4.16 · cloud sync</span>
+      <span class="brand-meta">v5.0 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1575,6 +1591,11 @@
       </div>
     </div>
 
+    <div class="settings-section" id="settings-partner-mode-section">
+      <div class="settings-section-label">Partner mode</div>
+      <div id="partner-mode-content"></div>
+    </div>
+
     <div class="settings-section">
       <div class="settings-section-label">Backup &amp; restore</div>
       <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
@@ -1658,6 +1679,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let _sb        = null;
 let _authUser  = null;
 let _syncTimer = null;
+let _ipSharedState = null;
+let _ipFetchedAt   = 0;
 
 function getSB() {
   if (!_sb && window.supabase && SUPABASE_URL.startsWith('https://')) {
@@ -1720,6 +1743,7 @@ async function loadFromCloud() {
     const cloudTs    = new Date(data.updated_at).getTime();
     if (cloudTs > localTs) {
       restoreStateFromObject(data.data);
+      if(state.settings.userRole==='partner'&&state.settings.linkedIpCode){setTimeout(fetchPartnerSharedData,200);}
     } else {
       pushToCloud(); // local is newer — sync it up
       setSyncDot('synced');
@@ -1760,8 +1784,14 @@ function restoreStateFromObject(d) {
 
 function showAuthOverlay() {
   const el = document.getElementById('auth-overlay');
-  if (el) el.classList.add('visible');
-  setTimeout(() => document.getElementById('auth-email')?.focus(), 80);
+  if (!el) return;
+  const isCallback = window.location.hash.includes('access_token') || window.location.search.includes('code=');
+  const card = el.querySelector('.auth-card');
+  if (card) card.style.display = isCallback ? 'none' : '';
+  const restoring = document.getElementById('auth-restoring');
+  if (restoring) restoring.style.display = isCallback ? 'flex' : 'none';
+  el.classList.add('visible');
+  if (!isCallback) setTimeout(() => document.getElementById('auth-email')?.focus(), 80);
 }
 
 function hideAuthOverlay() {
@@ -1770,23 +1800,8 @@ function hideAuthOverlay() {
 }
 
 async function sendMagicLink() {
-  const sb = getSB();
-  if (!sb) return;
   const email = (document.getElementById('auth-email')?.value || '').trim();
-  if (!email) { setAuthMsg('Please enter your email.', true); return; }
-  const btn = document.getElementById('auth-submit-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
-  setAuthMsg('');
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: window.location.origin + window.location.pathname }
-  });
-  if (btn) { btn.disabled = false; btn.textContent = 'Send magic link →'; }
-  if (error) {
-    setAuthMsg('Error: ' + error.message, true);
-  } else {
-    setAuthMsg('✓ Check your email for a sign-in link.', false);
-  }
+  await _sendOtp(email, 'auth-msg', 'auth-submit-btn');
 }
 
 function setAuthMsg(msg, isError) {
@@ -1832,6 +1847,239 @@ async function signOut() {
   const sb = getSB();
   if (!sb) return;
   await sb.auth.signOut();
+}
+
+
+/* ── PARTNER MODE ENGINE ──────────────────────────────────────────────── */
+
+function generateFamilyCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code='';
+  for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+  return code;
+}
+
+async function createAndStoreCode(){
+  const sb=getSB();
+  if(!sb||!_authUser){showToast('Sign in to create a family code');return;}
+  const code=generateFamilyCode();
+  try{
+    const{error}=await sb.rpc('create_family_link',{p_code:code});
+    if(error)throw error;
+    state.settings.familyCode=code;
+    save();renderPartnerSettings();
+    showToast('Family code created — share it with your partner');
+  }catch(e){
+    console.error('createAndStoreCode failed:',e);
+    showToast('Could not create code — check connection');
+  }
+}
+
+async function linkToIp(code){
+  const sb=getSB();
+  if(!sb||!_authUser){showToast('Sign in first');return;}
+  const cleaned=(code||'').trim().toUpperCase();
+  if(cleaned.length!==6){showToast('Enter the 6-character code from your partner');return;}
+  try{
+    const{data,error}=await sb.rpc('get_partner_data',{p_code:cleaned});
+    if(error||!data){showToast('Code not found — check with your partner');return;}
+    state.settings.linkedIpCode=cleaned;
+    _ipSharedState=data;
+    _ipFetchedAt=Date.now();
+    save();renderPartnerSettings();render();
+    showToast('Linked to partner journey');
+  }catch(e){
+    console.error('linkToIp failed:',e);
+    showToast('Could not link — check connection');
+  }
+}
+
+async function fetchPartnerSharedData(){
+  const sb=getSB();
+  const code=state.settings.linkedIpCode;
+  if(!sb||!_authUser||!code)return;
+  try{
+    const{data,error}=await sb.rpc('get_partner_data',{p_code:code});
+    if(error||!data){
+      _ipSharedState=null;
+      state.settings.linkedIpCode=null;
+      save();renderPartnerSettings();
+      showToast('Partner link is no longer active');
+      return;
+    }
+    _ipSharedState=data;
+    _ipFetchedAt=Date.now();
+    render();
+  }catch(e){console.error('fetchPartnerSharedData failed:',e);}
+}
+
+async function disconnectAsIp(){
+  const sb=getSB();
+  if(!sb||!_authUser)return;
+  if(!confirm('Remove family code? Your partner will lose access to shared data.'))return;
+  try{
+    await sb.from('family_links').delete().eq('ip_user_id',_authUser.id);
+    state.settings.familyCode=null;
+    save();renderPartnerSettings();
+    showToast('Family code removed');
+  }catch(e){showToast('Could not remove code — check connection');}
+}
+
+function disconnectAsPartner(){
+  if(!confirm('Unlink from partner journey? You will only see your own items.'))return;
+  _ipSharedState=null;_ipFetchedAt=0;
+  state.settings.linkedIpCode=null;
+  save();renderPartnerSettings();render();
+  showToast('Unlinked from partner journey');
+}
+
+function isPartnerWithLink(){
+  return state.settings.userRole==='partner'&&!!_ipSharedState;
+}
+
+function getSharedSections(){
+  const sv=((_ipSharedState&&_ipSharedState.settings&&_ipSharedState.settings.sectionVisibility)||state.settings.sectionVisibility||{});
+  return{
+    tasks:       (sv.tasks       ??'shared')==='shared',
+    budget:      (sv.budget      ??'shared')==='shared',
+    shopping:    (sv.shopping    ??'shared')==='shared',
+    hospitalBag: (sv.hospitalBag ??'shared')==='shared',
+    journal:     (sv.journal     ??'private')==='shared',
+    myStuffLinks:    (sv.myStuffLinks    ??'shared')==='shared',
+    myStuffContacts: (sv.myStuffContacts ??'shared')==='shared',
+    myStuffDocuments:(sv.myStuffDocuments??'shared')==='shared',
+  };
+}
+
+function ipItemShared(item,defaultVis){
+  defaultVis=defaultVis||'shared';
+  return(item&&item.visibility!=null?item.visibility:defaultVis)==='shared';
+}
+
+function visToggleHtml(id,type,currentVis,defaultVis){
+  defaultVis=defaultVis||'shared';
+  const vis=currentVis!=null?currentVis:defaultVis;
+  const isPrivate=vis==='private';
+  return`<label class="vis-toggle" onclick="event.stopPropagation()"><input type="checkbox" ${isPrivate?'checked':''} onchange="setItemVisibility('${type}','${id}',this.checked?'private':'shared')" /><span class="vis-label">${isPrivate?'🔒 Private':'👁 Shared'}</span></label>`;
+}
+
+function setItemVisibility(type,id,vis){
+  if(type==='task'){const t=findTask(id);if(t){t.visibility=vis;save();render();}}
+  else if(type==='journal'){const e=(state.journal||[]).find(j=>j.id===id);if(e){e.visibility=vis;save();renderJournal();}}
+  else if(type==='link'||type==='contact'||type==='document'){
+    const bucket={link:'links',contact:'contacts',document:'documents'}[type];
+    const item=(state.myStuff[bucket]||[]).find(x=>x.id===id);
+    if(item){item.visibility=vis;save();renderMyStuff();}
+  }
+  else if(type==='budgetCustom'){const c=(state.budgetCustomItems||[]).find(x=>x.id===id);if(c){c.visibility=vis;save();}}
+}
+
+function renderTaskReadOnly(t){
+  const stepsDone=(t.steps||[]).filter(s=>s.done).length;
+  let m='';
+  if(t.tags&&t.tags.includes('GC'))m+=`<span class="task-tag gc">${gcLabel()}</span>`;
+  m+=`<span class="task-tag ${(t.cat||'').toLowerCase()}">${t.cat||''}</span>`;
+  if(t.steps&&t.steps.length>0)m+=`<span class="task-meta-bit">${stepsDone}/${t.steps.length} steps</span>`;
+  return`<div class="task ${t.status==='done'?'done':''} partner-readonly"><div class="task-row"><div class="task-check">${t.status==='done'?'<svg class="icon" aria-hidden="true"><use href="#dd-check"></use></svg>':''}</div><div class="task-main"><div class="task-title">${escapeHtml(resolveTokens(t.title))}</div><div class="task-meta">${m}</div></div></div></div>`;
+}
+
+function renderMyStuffItemReadOnly(type,item){
+  if(type==='link'||type==='document'){
+    const isDoc=type==='document';
+    const label=item.label||(isDoc?'Untitled document':'Untitled link');
+    const url=item.url||'';
+    return`<div class="mystuff-item ${type} partner-readonly"><div class="ms-icon">${isDoc?'&#9636;':'↗'}</div><div class="ms-body"><div class="ms-primary">${escapeHtml(label)}</div>${url?`<div class="ms-meta"><a class="ms-open-btn" href="${escapeHtml(url)}" target="_blank" rel="noopener">Open ↗</a></div>`:''}</div></div>`;
+  }
+  if(type==='contact'){
+    const name=item.name||'Untitled contact';
+    return`<div class="mystuff-item contact partner-readonly"><div class="ms-icon">&#9673;</div><div class="ms-body"><div class="ms-primary">${escapeHtml(name)}</div>${item.role?`<div class="ms-meta">${escapeHtml(item.role)}${item.phone?` · <a href="tel:${escapeHtml(item.phone)}">${escapeHtml(item.phone)}</a>`:''}</div>`:''}</div></div>`;
+  }
+  return'';
+}
+
+function setSectionVisibility(key,vis){
+  if(!state.settings.sectionVisibility)state.settings.sectionVisibility={};
+  state.settings.sectionVisibility[key]=vis;
+  save();renderPartnerSettings();
+}
+
+function renderPartnerSettings(){
+  const el=document.getElementById('partner-mode-content');
+  if(!el)return;
+  const s=state.settings||{};
+  const isIp=s.userRole==='ip'||!s.userRole;
+  const isPartner=s.userRole==='partner';
+  if(isIp){
+    const code=s.familyCode||'';
+    const sv=s.sectionVisibility||{};
+    const sections=[
+      {key:'tasks',label:'Tasks'},{key:'budget',label:'Budget'},
+      {key:'shopping',label:'Shopping list'},{key:'hospitalBag',label:'Hospital bag'},
+      {key:'journal',label:'Journal'},{key:'myStuffLinks',label:'Links'},
+      {key:'myStuffContacts',label:'Contacts'},{key:'myStuffDocuments',label:'Documents'},
+    ];
+    const visRows=sections.map(sec=>{
+      const def=sec.key==='journal'?'private':'shared';
+      const isShared=(sv[sec.key]!=null?sv[sec.key]:def)==='shared';
+      return`<div class="settings-row" style="margin-bottom:6px;"><label class="settings-field-label" style="flex:1;">${sec.label}</label><div class="settings-btn-group" style="gap:6px;"><button class="${isShared?'active':''}" onclick="setSectionVisibility('${sec.key}','shared')">Shared</button><button class="${!isShared?'active':''}" onclick="setSectionVisibility('${sec.key}','private')">Private</button></div></div>`;
+    }).join('');
+    el.innerHTML=code
+      ?`<div style="font-size:12px;color:var(--ink-soft);margin-bottom:14px;line-height:1.6;">Share this code with your partner so they can link to your journey.</div>
+<div class="settings-row" style="align-items:center;margin-bottom:16px;"><label class="settings-field-label">Family code</label><div style="display:flex;align-items:center;gap:8px;flex:1;"><span style="font-family:var(--font-mono);font-size:18px;font-weight:600;letter-spacing:.12em;color:var(--terracotta);">${code}</span><button class="tiny-btn" onclick="navigator.clipboard.writeText('${code}').then(()=>showToast('Code copied!'))" style="font-size:11px;">Copy</button></div></div>
+<div style="margin-bottom:8px;font-size:11px;font-family:var(--font-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-muted);">Default sharing</div>
+${visRows}
+<div style="margin-top:14px;"><button class="tiny-btn danger" onclick="disconnectAsIp()" style="font-size:11px;">Remove family code</button></div>`
+      :`<div style="font-size:12px;color:var(--ink-soft);margin-bottom:14px;line-height:1.6;">Generate a 6-character code to share with your partner. They enter it in their app to see your shared items.</div><button class="tiny-btn primary" onclick="createAndStoreCode()" style="font-size:11px;">Generate family code</button>`;
+  }
+  if(isPartner){
+    const linked=!!s.linkedIpCode;
+    const ipName=(_ipSharedState&&_ipSharedState.settings&&_ipSharedState.settings.name)||'your partner';
+    el.innerHTML=linked
+      ?`<div style="font-size:12px;color:var(--ink-soft);margin-bottom:14px;line-height:1.6;">Linked to ${escapeHtml(ipName)}’s journey. Shared items appear in each module.</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="tiny-btn" onclick="fetchPartnerSharedData()" style="font-size:11px;">↻ Refresh</button><button class="tiny-btn danger" onclick="disconnectAsPartner()" style="font-size:11px;">Unlink</button></div>
+${_ipFetchedAt?`<div style="font-size:11px;color:var(--ink-muted);margin-top:8px;font-family:var(--font-mono);">Last refreshed: ${new Date(_ipFetchedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>`:''}`
+      :`<div style="font-size:12px;color:var(--ink-soft);margin-bottom:14px;line-height:1.6;">Enter the 6-character code from your partner to see their shared journey items.</div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><input id="family-code-input" class="settings-input" type="text" maxlength="6" placeholder="e.g. ZK4M9R" style="width:140px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.1em;font-size:16px;" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')linkToIp(document.getElementById('family-code-input').value)" /><button class="tiny-btn primary" onclick="linkToIp(document.getElementById('family-code-input').value)" style="font-size:11px;">Link</button></div>`;
+  }
+}
+
+async function obFamilyLinkAndNext(){
+  const input=document.getElementById('ob-family-code');
+  const code=(input?.value||'').trim().toUpperCase();
+  if(code.length===6)await linkToIp(code);
+  onboardingNext();
+}
+
+function setAuthTab(tab){
+  document.getElementById('auth-panel-return').style.display=tab==='return'?'':'none';
+  document.getElementById('auth-panel-new').style.display=tab==='new'?'':'none';
+  document.getElementById('auth-tab-return').classList.toggle('active',tab==='return');
+  document.getElementById('auth-tab-new').classList.toggle('active',tab==='new');
+}
+
+async function sendMagicLinkNew(){
+  const email=(document.getElementById('auth-email-new')?.value||'').trim();
+  await _sendOtp(email,'auth-msg-new','auth-submit-new');
+}
+
+async function _sendOtp(email,msgId,btnId){
+  const sb=getSB();
+  if(!sb)return;
+  if(!email){setAuthMsgById(msgId,'Please enter your email.',true);return;}
+  const btn=document.getElementById(btnId||'auth-submit-btn');
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  setAuthMsgById(msgId,'');
+  const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin+window.location.pathname}});
+  if(btn){btn.disabled=false;btn.textContent=btnId==='auth-submit-btn'?'Send sign-in link →':'Create account →';}
+  if(error){setAuthMsgById(msgId,'Error: '+error.message,true);}
+  else{setAuthMsgById(msgId,'✓ Check your email — click the link to open the app.',false);}
+}
+
+function setAuthMsgById(id,msg,isError){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=msg;
+  el.className='auth-msg'+(isError?' error':'');
 }
 
 function showPrivacy() {
@@ -2018,7 +2266,7 @@ let state = {
     currentPhase:'pre-transfer',
     gcName:'',
     transferDateStr:'',
-    gcDistance:null, priorLoss:null, isFirstTimeParent:null, isPartnered:null, birthAttendance:null, userRole:null, linkedIpUserId:null
+    gcDistance:null, priorLoss:null, isFirstTimeParent:null, isPartnered:null, birthAttendance:null, userRole:null, linkedIpUserId:null, linkedIpCode:null, familyCode:null, sectionVisibility:{tasks:'shared',budget:'shared',shopping:'shared',hospitalBag:'shared',journal:'private',myStuffLinks:'shared',myStuffContacts:'shared',myStuffDocuments:'shared'}
   },
   snapshots:[]
 };
@@ -2029,7 +2277,7 @@ function deleteItem(type,id){const b=BUCKET[type];if(!b)return;const idx=(state.
 
 function seedIfEmpty(){
   const raw=localStorage.getItem(STORAGE_KEY);
-  if(raw){try{const p=JSON.parse(raw);if(p.tasks&&p.tasks.length>0){state.tasks=p.tasks;state.myStuff=p.myStuff||{links:[],contacts:[],documents:[]};['links','contacts','documents'].forEach(k=>{if(!state.myStuff[k])state.myStuff[k]=[];});state.tasks.forEach(t=>{if(!t.attachments)t.attachments=[];if(t.dueDate===undefined)t.dueDate='';});state.thisWeek=new Set(p.thisWeek||[]);state.budget=p.budget||{};state.shopping=p.shopping||{};state.budgetCustomItems=p.budgetCustomItems||[];state.journal=p.journal||[];state.xp=p.xp||0;state.streak=p.streak||0;state.lastCheckinDate=p.lastCheckinDate||'';state.readCardIds=p.readCardIds||[];state.dailyCardLog=p.dailyCardLog||{};state.hospitalBag=p.hospitalBag||initHospitalBag();state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',gcName:'',transferDateStr:'',gcDistance:null,priorLoss:null,isFirstTimeParent:null,isPartnered:null,birthAttendance:null,userRole:null,linkedIpUserId:null},p.settings||{});if(state.settings.familyPath==='adoption')state.settings.familyPath='ivf';state.completedMilestones=p.completedMilestones||[];state.mutedTracks=p.mutedTracks||[];state.mutedSensitivity=p.mutedSensitivity||[];state.questionLog=p.questionLog||{};initBudgetState();return;}}catch{}}
+  if(raw){try{const p=JSON.parse(raw);if(p.tasks&&p.tasks.length>0){state.tasks=p.tasks;state.myStuff=p.myStuff||{links:[],contacts:[],documents:[]};['links','contacts','documents'].forEach(k=>{if(!state.myStuff[k])state.myStuff[k]=[];});state.tasks.forEach(t=>{if(!t.attachments)t.attachments=[];if(t.dueDate===undefined)t.dueDate='';});state.thisWeek=new Set(p.thisWeek||[]);state.budget=p.budget||{};state.shopping=p.shopping||{};state.budgetCustomItems=p.budgetCustomItems||[];state.journal=p.journal||[];state.xp=p.xp||0;state.streak=p.streak||0;state.lastCheckinDate=p.lastCheckinDate||'';state.readCardIds=p.readCardIds||[];state.dailyCardLog=p.dailyCardLog||{};state.hospitalBag=p.hospitalBag||initHospitalBag();state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',gcName:'',transferDateStr:'',gcDistance:null,priorLoss:null,isFirstTimeParent:null,isPartnered:null,birthAttendance:null,userRole:null,linkedIpUserId:null,linkedIpCode:null,familyCode:null,sectionVisibility:{tasks:'shared',budget:'shared',shopping:'shared',hospitalBag:'shared',journal:'private',myStuffLinks:'shared',myStuffContacts:'shared',myStuffDocuments:'shared'}},p.settings||{});if(state.settings.familyPath==='adoption')state.settings.familyPath='ivf';state.completedMilestones=p.completedMilestones||[];state.mutedTracks=p.mutedTracks||[];state.mutedSensitivity=p.mutedSensitivity||[];state.questionLog=p.questionLog||{};initBudgetState();return;}}catch{}}
   const legacyRaw=localStorage.getItem(LEGACY_KEY_V22);
   if(legacyRaw){try{const legacy=JSON.parse(legacyRaw);if(legacy.tasks&&legacy.tasks.length>0){state.tasks=legacy.tasks.map(t=>({...t,attachments:[]}));legacy.tasks.forEach((lt,ti)=>{(lt.attachments||[]).forEach(a=>{if(!a||!a.type)return;if(a.type==='file'){a.type='document';a.label=a.name||a.label||'Untitled';a.url=a.url||'';}if(a.type==='link'){const item=createItem('link',{label:a.label||'Untitled link',url:a.url||''});state.tasks[ti].attachments.push({type:'link',id:item.id});}else if(a.type==='document'){const item=createItem('document',{label:a.label||'Untitled document',url:a.url||''});state.tasks[ti].attachments.push({type:'document',id:item.id});}else if(a.type==='contact'){const item=createItem('contact',{name:a.name||'Untitled',role:a.role||'',phone:a.phone||'',email:a.email||'',note:a.note||''});state.tasks[ti].attachments.push({type:'contact',id:item.id});}});});state.phaseCollapsed=legacy.phaseCollapsed?new Set(legacy.phaseCollapsed):new Set(PHASES.map(p=>p.id).filter(id=>id!==getCurrentPhase()));save();return;}}catch{}}
   state.tasks=SEED_TASKS.map(t=>({id:uid(),title:t.title,notes:'',cat:t.cat,tags:t.tags.slice(),phase:t.phase,pinned:false,status:'open',steps:[],attachments:[],dueDate:'',createdBy:'seed'}));
@@ -2144,6 +2392,11 @@ function passesFilter(t){
 
 function renderPhases(){
   const container=document.getElementById('phases-container');let html='';
+  if(isPartnerWithLink()&&getSharedSections().tasks){
+    const ipName=((_ipSharedState.settings&&_ipSharedState.settings.name)||'Partner');
+    const ipTasks=(_ipSharedState.tasks||[]).filter(t=>ipItemShared(t)&&passesFilter(t));
+    if(ipTasks.length){html+=`<div class="partner-shared-section"><div class="partner-shared-label">Shared from ${escapeHtml(ipName)}’s journey</div>${ipTasks.map(t=>renderTaskReadOnly(t)).join('')}</div>`;}
+  }
   for(const phase of PHASES){
     const tasksInPhase=state.tasks.filter(t=>t.phase===phase.id);
     const visibleTasks=tasksInPhase.filter(passesFilter);
@@ -2231,6 +2484,7 @@ function renderExpanded(t){
       <label class="toggle"><input type="checkbox" ${t.tags.includes('GC')?'checked':''} onchange="toggleTag('${t.id}','GC')" /> ${gcLabel()}-specific</label>
       <label class="toggle"><input type="checkbox" ${t.tags.includes('Wife')?'checked':''} onchange="toggleTag('${t.id}','Wife')" /> Discuss with ${partnerLabel()}</label>
       <div class="week-toggle ${state.thisWeek.has(t.id)?'in-week':''}" onclick="toggleThisWeek('${t.id}')">${state.thisWeek.has(t.id)?'✓ In this week':'+ Add to this week'}</div>
+      ${state.settings.familyCode?visToggleHtml(t.id,'task',t.visibility):''}
     </div>
     <div class="task-actions"><button class="tiny-btn danger" onclick="deleteTask('${t.id}')">Delete</button></div>
   </div>`;
@@ -2264,12 +2518,23 @@ function renderMyStuff(){
   const btn=document.getElementById('ms-add-btn');if(btn)btn.innerText=`+ New ${TYPE_BY_TAB[state.myStuffTab]}`;
   const container=document.getElementById('mystuff-content');if(!container)return;
   const tab=state.myStuffTab,type=TYPE_BY_TAB[tab],items=state.myStuff[tab]||[];
-  if(!items.length){const g={links:'↗',contacts:'◉',documents:'▤'};const ti={links:'No links yet',contacts:'No contacts yet',documents:'No documents yet'};const su={links:'Paste portal URLs, research pages, anything worth revisiting.',contacts:"Store your attorney, agency coordinator, pediatrician — anyone whose number you need fast.",documents:"Paste share links to your GCA, insurance cards, pre-birth order, ultrasounds."};container.innerHTML=`<div class="mystuff-empty"><span class="empty-glyph">${g[tab]}</span><div class="empty-title">${ti[tab]}</div><div class="empty-sub">${su[tab]}</div></div>`;return;}
-  container.innerHTML=`<div class="mystuff-list">${items.map(item=>renderMyStuffItem(type,item)).join('')}</div>`;
+  let sharedHtml='';
+  if(isPartnerWithLink()){
+    const ss=getSharedSections();
+    const sectionKey={links:'myStuffLinks',contacts:'myStuffContacts',documents:'myStuffDocuments'}[tab];
+    if(ss[sectionKey]&&_ipSharedState.myStuff&&_ipSharedState.myStuff[tab]){
+      const ipName=((_ipSharedState.settings&&_ipSharedState.settings.name)||'Partner');
+      const ipItems=(_ipSharedState.myStuff[tab]||[]).filter(i=>ipItemShared(i));
+      if(ipItems.length)sharedHtml=`<div class="partner-shared-section"><div class="partner-shared-label">Shared from ${escapeHtml(ipName)}</div><div class="mystuff-list">${ipItems.map(i=>renderMyStuffItemReadOnly(type,i)).join('')}</div></div>`;
+    }
+  }
+  if(!items.length&&!sharedHtml){const g={links:'↗',contacts:'◎',documents:'▤'};const ti={links:'No links yet',contacts:'No contacts yet',documents:'No documents yet'};const su={links:'Paste portal URLs, research pages, anything worth revisiting.',contacts:"Store your attorney, agency coordinator, pediatrician — anyone whose number you need fast.",documents:"Paste share links to your GCA, insurance cards, pre-birth order, ultrasounds."};container.innerHTML=sharedHtml+`<div class="mystuff-empty"><span class="empty-glyph">${g[tab]}</span><div class="empty-title">${ti[tab]}</div><div class="empty-sub">${su[tab]}</div></div>`;return;}
+  if(!items.length){container.innerHTML=sharedHtml;return;}
+  container.innerHTML=sharedHtml+`<div class="mystuff-list">${items.map(item=>renderMyStuffItem(type,item)).join('')}</div>`;
 }
 function renderMyStuffItem(type,item){
-  if(type==='link'||type==='document'){const isDoc=type==='document';const label=item.label||(isDoc?'Untitled document':'Untitled link');const url=item.url||'';const ph=isDoc?'paste document link (Drive, Dropbox, Notion…)':'paste url…';return`<div class="mystuff-item ${type}"><div class="ms-icon">${isDoc?'▤':'↗'}</div><div class="ms-body"><div class="ms-primary" contenteditable="true" onblur="editItem('${type}','${item.id}','label',this.innerText)">${escapeHtml(label)}</div><div class="ms-meta"><span class="ms-field" style="display:block;"><span class="ms-field-label">URL</span><span class="ms-field-val ${url?'':'empty'}" contenteditable="true" onblur="editItem('${type}','${item.id}','url',this.innerText)">${escapeHtml(url||ph)}</span></span></div></div><div class="ms-actions">${url?`<a class="ms-open-btn" href="${escapeHtml(url)}" target="_blank" rel="noopener">Open ↗</a>`:''}<div class="ms-delete-btn" onclick="confirmDeleteItem('${type}','${item.id}')">Delete</div></div></div>`;}
-  if(type==='contact'){const name=item.name||'Untitled contact';const hp=!!item.phone,he=!!item.email;return`<div class="mystuff-item contact"><div class="ms-icon">◉</div><div class="ms-body"><div class="ms-primary" contenteditable="true" onblur="editItem('contact','${item.id}','name',this.innerText)">${escapeHtml(name)}</div><div class="ms-meta"><span class="ms-field"><span class="ms-field-label">Role</span><span class="ms-field-val ${item.role?'':'empty'}" contenteditable="true" onblur="editItem('contact','${item.id}','role',this.innerText)">${escapeHtml(item.role||'—')}</span></span><span class="ms-field"><span class="ms-field-label">Phone</span>${hp?`<a href="tel:${escapeHtml(item.phone)}">${escapeHtml(item.phone)}</a>`:`<span class="ms-field-val empty" contenteditable="true" onblur="editItem('contact','${item.id}','phone',this.innerText)">—</span>`}</span><span class="ms-field"><span class="ms-field-label">Email</span>${he?`<a href="mailto:${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>`:`<span class="ms-field-val empty" contenteditable="true" onblur="editItem('contact','${item.id}','email',this.innerText)">—</span>`}</span></div></div><div class="ms-actions"><div class="ms-delete-btn" onclick="confirmDeleteItem('contact','${item.id}')">Delete</div></div></div>`;}
+  if(type==='link'||type==='document'){const isDoc=type==='document';const label=item.label||(isDoc?'Untitled document':'Untitled link');const url=item.url||'';const ph=isDoc?'paste document link (Drive, Dropbox, Notion…)':'paste url…';return`<div class="mystuff-item ${type}"><div class="ms-icon">${isDoc?'▤':'↗'}</div><div class="ms-body"><div class="ms-primary" contenteditable="true" onblur="editItem('${type}','${item.id}','label',this.innerText)">${escapeHtml(label)}</div><div class="ms-meta"><span class="ms-field" style="display:block;"><span class="ms-field-label">URL</span><span class="ms-field-val ${url?'':'empty'}" contenteditable="true" onblur="editItem('${type}','${item.id}','url',this.innerText)">${escapeHtml(url||ph)}</span></span></div></div><div class="ms-actions">${url?`<a class="ms-open-btn" href="${escapeHtml(url)}" target="_blank" rel="noopener">Open ↗</a>`:''}<div class="ms-delete-btn" onclick="confirmDeleteItem('${type}','${item.id}')">Delete</div>${state.settings.familyCode?visToggleHtml(item.id,type,item.visibility):''}</div></div>`;}
+  if(type==='contact'){const name=item.name||'Untitled contact';const hp=!!item.phone,he=!!item.email;return`<div class="mystuff-item contact"><div class="ms-icon">◉</div><div class="ms-body"><div class="ms-primary" contenteditable="true" onblur="editItem('contact','${item.id}','name',this.innerText)">${escapeHtml(name)}</div><div class="ms-meta"><span class="ms-field"><span class="ms-field-label">Role</span><span class="ms-field-val ${item.role?'':'empty'}" contenteditable="true" onblur="editItem('contact','${item.id}','role',this.innerText)">${escapeHtml(item.role||'—')}</span></span><span class="ms-field"><span class="ms-field-label">Phone</span>${hp?`<a href="tel:${escapeHtml(item.phone)}">${escapeHtml(item.phone)}</a>`:`<span class="ms-field-val empty" contenteditable="true" onblur="editItem('contact','${item.id}','phone',this.innerText)">—</span>`}</span><span class="ms-field"><span class="ms-field-label">Email</span>${he?`<a href="mailto:${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>`:`<span class="ms-field-val empty" contenteditable="true" onblur="editItem('contact','${item.id}','email',this.innerText)">—</span>`}</span></div></div><div class="ms-actions"><div class="ms-delete-btn" onclick="confirmDeleteItem('contact','${item.id}')">Delete</div>${state.settings.familyCode?visToggleHtml(item.id,'contact',item.visibility):''}</div></div>`;}
   return'';
 }
 function addNewItem(){const type=TYPE_BY_TAB[state.myStuffTab];const def={link:{label:'New link',url:''},contact:{name:'New contact',role:'',phone:'',email:'',note:''},document:{label:'New document',url:''}};createItem(type,def[type]||{});save();render();}
@@ -2705,7 +2970,16 @@ function renderBudgetModule(){
     </div>`;
   }
 
-  el.innerHTML=summaryHtml+journeyHtml+scenBar+cg;
+  let sharedBudgetHtml='';
+  if(isPartnerWithLink()&&getSharedSections().budget){
+    const ipName=((_ipSharedState.settings&&_ipSharedState.settings.name)||'Partner');
+    const ipCustom=(_ipSharedState.budgetCustomItems||[]).filter(c=>ipItemShared(c));
+    if(ipCustom.length){
+      const ipRows=ipCustom.map(c=>`<div class="partner-budget-item partner-readonly" style="padding:6px 0;border-bottom:1px solid color-mix(in srgb,var(--rule) 50%,transparent);font-size:13px;">${escapeHtml(c.name)}${c.price!=null?` <span style="color:var(--ink-soft);font-size:11px;">$${c.price}</span>`:''}${c.notes?` <span style="color:var(--ink-muted);font-size:11px;">${escapeHtml(c.notes)}</span>`:''}</div>`).join('');
+      sharedBudgetHtml=`<div class="partner-shared-section" style="margin-top:16px;"><div class="partner-shared-label">Shared from ${escapeHtml(ipName)}</div>${ipRows}</div>`;
+    }
+  }
+  el.innerHTML=summaryHtml+journeyHtml+scenBar+cg+sharedBudgetHtml;
   if(state.budgetAddingGroup){const inp=document.getElementById('add-item-name-'+state.budgetAddingGroup);if(inp)setTimeout(()=>inp.focus(),50);}
 }
 
@@ -2749,6 +3023,7 @@ function renderBudgetCat(cat,isSurro=false,isCustom=false){
     <div class="be-footer">
       <label class="be-exclude" onclick="event.stopPropagation()"><input type="checkbox" ${!inc?'checked':''} onchange="toggleBudgetIncluded('${cat.id}',event)" /> Exclude from total</label>
       ${df!=null?`<span class="be-actual-display ${df>0?'over':'under'}">${df>0?'+':'-'}${fmtMoney(Math.abs(df))} vs. planned</span>`:''}
+      ${isCustom&&state.settings.familyCode?visToggleHtml(cat.id,'budgetCustom',cat.visibility):''}
       ${isCustom?`<span class="be-delete" onclick="removeCustomItem('${cat.id}')">Delete item</span>`:''}
       ${!isCustom&&!isSurro?`<span class="be-shopping-link" onclick="event.stopPropagation();openProductIdeas('${cat.id}')">↗ Product ideas</span>`:''}
     </div>
@@ -2838,7 +3113,7 @@ const JOURNAL_EVERGREEN = [
   "Describe where you are in life right now, as if writing to a stranger who knows nothing about you.",
 ];
 
-let jDraft = { body:'', isLetter:false, promptText:'', showPrompts:false, editingId:null };
+let jDraft = { body:'', isLetter:false, promptText:'', showPrompts:false, editingId:null, visibility:'private' };
 let jView = 'list';
 let jDetailId = null;
 let jPromptPool = [];
@@ -2851,9 +3126,9 @@ function journalGo(view, id) {
   if (view === 'write') {
     if (id) {
       const entry = (state.journal||[]).find(e=>e.id===id);
-      if (entry) jDraft = { body:entry.body, isLetter:entry.isLetter||false, promptText:entry.promptText||'', showPrompts:false, editingId:id };
+      if (entry) jDraft = { body:entry.body, isLetter:entry.isLetter||false, promptText:entry.promptText||'', showPrompts:false, editingId:id, visibility:entry.visibility||'private' };
     } else {
-      jDraft = { body:'', isLetter:false, promptText:'', showPrompts:false, editingId:null };
+      jDraft = { body:'', isLetter:false, promptText:'', showPrompts:false, editingId:null, visibility:'private' };
     }
   }
   renderJournal();
@@ -2885,10 +3160,23 @@ function renderJournal() {
 }
 
 function renderJournalList(el) {
+  let sharedEntriesHtml='';
+  if(isPartnerWithLink()&&getSharedSections().journal){
+    const ipName=((_ipSharedState.settings&&_ipSharedState.settings.name)||'Partner');
+    const ipEntries=(_ipSharedState.journal||[]).filter(e=>ipItemShared(e,'private')).slice().sort((a,b)=>b.createdAt-a.createdAt);
+    if(ipEntries.length){
+      sharedEntriesHtml=`<div class="partner-shared-section"><div class="partner-shared-label">Shared from ${escapeHtml(ipName)}</div><div class="journal-list">${ipEntries.map(e=>{
+        const date=new Date(e.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+        const preview=(e.body||'').trim().slice(0,130)+((e.body||'').length>130?'…':'');
+        return`<div class="journal-entry-card ${e.isLetter?'letter':''} partner-readonly"><div class="jec-header"><span class="jec-date">${date}</span>${e.isLetter?'<span class="jec-badge letter">Letter</span>':''}${e.promptText?'<span class="jec-badge prompted">Prompted</span>':''}</div><div class="jec-preview">${escapeHtml(e.isLetter?'Dear kid, '+preview:preview)||'<em style="color:var(--ink-muted)">Empty entry</em>'}</div></div>`;
+      }).join('')}</div></div>`;
+    }
+  }
   const entries = (state.journal||[]).slice().sort((a,b)=>b.createdAt-a.createdAt);
   if (!entries.length) {
+    if(sharedEntriesHtml){el.innerHTML=sharedEntriesHtml;return;}
     el.innerHTML = `<div class="journal-empty">
-      <span class="je-glyph">◎</span>
+      <span class="je-glyph">&#9678;</span>
       <div class="je-title">The page is blank.</div>
       <div class="je-sub">That's not a problem — it's the whole point. Start with one sentence. It doesn't have to be good.</div>
       <button class="card-btn primary" onclick="startNewEntry()" style="display:inline-flex;">Write your first entry</button>
@@ -2903,9 +3191,9 @@ function renderJournalList(el) {
     if (!grouped[key]) { grouped[key] = []; groupOrder.push(key); }
     grouped[key].push(e);
   });
-  el.innerHTML = `<div class="journal-list">${groupOrder.map(key => {
+  el.innerHTML = sharedEntriesHtml+`<div class="journal-list">${groupOrder.map(key => {
     const grp = grouped[key];
-    const hdr = `<div class="jl-month-header">${key}<span class="jl-month-count">· ${grp.length} ${grp.length===1?'entry':'entries'}</span></div>`;
+    const hdr = `<div class="jl-month-header">${key}<span class="jl-month-count">\xb7\xa0${grp.length}\xa0${grp.length===1?'entry':'entries'}</span></div>`;
     return hdr + grp.map(e => {
       const date = new Date(e.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
       const preview = (e.body||'').trim().slice(0,130) + ((e.body||'').length>130?'…':'');
@@ -2914,6 +3202,7 @@ function renderJournalList(el) {
           <span class="jec-date">${date}</span>
           ${e.isLetter?'<span class="jec-badge letter">Letter</span>':''}
           ${e.promptText?'<span class="jec-badge prompted">Prompted</span>':''}
+          ${state.settings.familyCode?`<span onclick="event.stopPropagation()">${visToggleHtml(e.id,'journal',e.visibility,'private')}</span>`:''}
         </div>
         <div class="jec-preview">${escapeHtml(e.isLetter?'Dear kid, '+preview:preview)||'<em style="color:var(--ink-muted)">Empty entry</em>'}</div>
       </div>`;
@@ -2966,6 +3255,7 @@ function renderJournalWrite(el) {
       </button>
       ${jDraft.editingId?`<button class="tiny-btn danger" onclick="deleteJournalEntry('${jDraft.editingId}')">Delete</button>`:''}
       <span class="journal-char-count" id="journal-char-count">${charCount>0?charCount+' chars':''}</span>
+      ${state.settings.familyCode?`<label class="vis-toggle" style="margin-left:auto;" onclick="event.stopPropagation()"><input type="checkbox" ${(jDraft.visibility||'private')==='shared'?'checked':''} onchange="jDraft.visibility=this.checked?'shared':'private';renderJournal()" /><span class="vis-label">${(jDraft.visibility||'private')==='shared'?'👁 Share with partner':'🔒 Private'}</span></label>`:''}
     </div>
   </div>`;
 
@@ -3043,7 +3333,7 @@ function saveJournalEntry() {
     const entry=state.journal.find(e=>e.id===jDraft.editingId);
     if(entry){entry.body=jDraft.body;entry.isLetter=jDraft.isLetter;entry.promptText=jDraft.promptText;entry.updatedAt=Date.now();}
   } else {
-    state.journal.unshift({id:uid('j_'),body:jDraft.body,isLetter:jDraft.isLetter,promptText:jDraft.promptText,phase:getCurrentPhase(),createdAt:Date.now(),updatedAt:Date.now()});
+    state.journal.unshift({id:uid('j_'),body:jDraft.body,isLetter:jDraft.isLetter,promptText:jDraft.promptText,visibility:jDraft.visibility||'private',phase:getCurrentPhase(),createdAt:Date.now(),updatedAt:Date.now()});
   }
   save();
   renderJournalHomeCount();
@@ -4667,6 +4957,7 @@ function openSettings(){
   if(journeySec)journeySec.style.display=(s.userRole==='partner')?'none':'';
   renderAccountSection();
   renderSituationProfile();
+  renderPartnerSettings();
   document.getElementById('settings-backdrop').classList.add('open');
   document.getElementById('settings-modal').classList.add('open');
 }
@@ -4860,7 +5151,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v4.16'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.0'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -4921,7 +5212,7 @@ function confirmImport(){
   state.readCardIds=d.readCardIds||[];
   state.dailyCardLog=d.dailyCardLog||{};
   state.hospitalBag=d.hospitalBag||initHospitalBag();
-  state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',userRole:null,linkedIpUserId:null},d.settings||{});
+  state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',userRole:null,linkedIpUserId:null,linkedIpCode:null,familyCode:null,sectionVisibility:{tasks:'shared',budget:'shared',shopping:'shared',hospitalBag:'shared',journal:'private',myStuffLinks:'shared',myStuffContacts:'shared',myStuffDocuments:'shared'}},d.settings||{});
   pendingImportData=null;
   save();
   render();
@@ -4967,7 +5258,7 @@ function restoreSnapshot(idx){
     state.readCardIds=d.readCardIds||[];
     state.dailyCardLog=d.dailyCardLog||{};
     state.hospitalBag=d.hospitalBag||initHospitalBag();
-    state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',userRole:null,linkedIpUserId:null},d.settings||{});
+    state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',userRole:null,linkedIpUserId:null,linkedIpCode:null,familyCode:null,sectionVisibility:{tasks:'shared',budget:'shared',shopping:'shared',hospitalBag:'shared',journal:'private',myStuffLinks:'shared',myStuffContacts:'shared',myStuffDocuments:'shared'}},d.settings||{});
     save();render();applySettings();renderTopbar();renderStreakStrip();renderHomeCard();renderNudge();renderLibHomeProgress();
     closeSettings();
     showToast('Snapshot restored — '+snaps[idx].date);
@@ -5181,8 +5472,17 @@ function renderShopping(){
     <input type="text" id="shop-add-input" placeholder="Add an item…" onkeydown="if(event.key==='Enter')addShoppingItem()" oninput="this.closest('.quick-add').classList.toggle('has-text',this.value.length>0)"/>
     <button class="quick-add-submit" onclick="addShoppingItem()">Add</button>
   </div></div>`;
+  let sharedShopHtml='';
+  if(isPartnerWithLink()&&getSharedSections().shopping){
+    const ipName=((_ipSharedState.settings&&_ipSharedState.settings.name)||'Partner');
+    const ipShopItems=Object.values(_ipSharedState.shopping||{}).filter(i=>i.custom&&i.tier===shopTab&&ipItemShared(i));
+    if(ipShopItems.length){
+      const ipRows=ipShopItems.map(i=>`<div class="shop-item partner-readonly"><div class="shop-item-icon">${CAT_EMOJI[i.category]||'📦'}</div><div class="shop-item-body"><div class="shop-item-name">${escapeHtml(i.name)}</div>${i.note?`<div class="shop-item-note">${escapeHtml(i.note)}</div>`:''}</div></div>`).join('');
+      sharedShopHtml=`<div class="partner-shared-section" style="margin-top:16px;"><div class="partner-shared-label">Shared from ${escapeHtml(ipName)}</div>${ipRows}</div>`;
+    }
+  }
   const el=document.getElementById('shop-content');
-  if(el)el.innerHTML=itemsHtml+addRow;
+  if(el)el.innerHTML=itemsHtml+addRow+sharedShopHtml;
   const tabEl=document.getElementById('shop-tabs');
   if(tabEl)tabEl.innerHTML=tabBar;
   const filterEl=document.getElementById('shop-filters');
@@ -5212,7 +5512,7 @@ function addShoppingItem(){
   const name=input.value.trim();
   if(!name)return;
   const id=uid('sh_c');
-  state.shopping[id]={id,bought:false,custom:true,name,note:'',price:'',link:'',category:'',tags:[],tier:shopTab};
+  state.shopping[id]={id,bought:false,custom:true,name,note:'',price:'',link:'',category:'',tags:[],tier:shopTab,visibility:'shared'};
   input.value='';
   input.closest('.quick-add').classList.remove('has-text');
   save();renderShopping();renderShoppingHomeCount();
@@ -5317,8 +5617,18 @@ function renderBag() {
     <input type="text" id="bag-add-input" placeholder="Add an item…" onkeydown="if(event.key==='Enter')addBagItem('${bagTab}')" oninput="this.closest('.quick-add').classList.toggle('has-text',this.value.length>0)"/>
     <button class="quick-add-submit" onclick="addBagItem('${bagTab}')">Add</button>
   </div></div>`;
+  let sharedBagHtml='';
+  if(isPartnerWithLink()&&getSharedSections().hospitalBag){
+    const ipName=((_ipSharedState.settings&&_ipSharedState.settings.name)||'Partner');
+    const ipBagTab=(_ipSharedState.hospitalBag&&_ipSharedState.hospitalBag[bagTab])||[];
+    const ipBagItems=ipBagTab.filter(i=>i.custom&&ipItemShared(i));
+    if(ipBagItems.length){
+      const ipRows=ipBagItems.map(i=>`<div class="bag-item partner-readonly"><div class="bag-item-label">${escapeHtml(i.text)}</div></div>`).join('');
+      sharedBagHtml=`<div class="partner-shared-section" style="margin-top:8px;"><div class="partner-shared-label">Shared from ${escapeHtml(ipName)}</div>${ipRows}</div>`;
+    }
+  }
   const el = document.getElementById('bag-content');
-  if (el) el.innerHTML = docsNote + itemsHtml + addRow;
+  if (el) el.innerHTML = docsNote + itemsHtml + addRow + sharedBagHtml;
   const tabEl = document.getElementById('bag-tabs');
   if (tabEl) tabEl.innerHTML = tabBar;
 }
@@ -5341,7 +5651,7 @@ function addBagItem(tab) {
   if (!text) return;
   const bag = getBag();
   if (!bag[tab]) bag[tab] = [];
-  bag[tab].push({id:uid('bi_'), text, packed:false, custom:true});
+  bag[tab].push({id:uid('bi_'), text, packed:false, custom:true, visibility:'shared'});
   input.value = '';
   input.closest('.quick-add').classList.remove('has-text');
   save(); renderBag(); renderBagHomeCount();
@@ -5367,7 +5677,7 @@ let obStep = 1;
 let obPath = 'gestational-surrogacy';
 let obRole = null;
 const OB_TOTAL_IP = 8;
-const OB_TOTAL_PARTNER = 6;
+const OB_TOTAL_PARTNER = 7;
 function obTotal(){ return obRole === 'partner' ? OB_TOTAL_PARTNER : OB_TOTAL_IP; }
 
 function checkOnboarding() {
@@ -5417,7 +5727,7 @@ function renderOnboardingStep() {
   const pathName = pathLabels[obPath] || 'your path';
 
   if (obStep === 1) {
-    body.innerHTML = `<div class="ob-welcome"><div class="ob-icon">◉</div><h2 class="ob-title">Welcome to<br><em>Daddy Duty.</em></h2><p class="ob-sub">Let's set you up. Takes 60 seconds.</p><button class="card-btn primary ob-cta" onclick="onboardingNext()">Get started →</button></div>`;
+    body.innerHTML = `<div class="ob-welcome"><div class="ob-icon">◎</div><h2 class="ob-title">Welcome to<br><em>Daddy Duty.</em></h2><p class="ob-sub">Let’s set you up. Takes 60 seconds.</p><button class="card-btn primary ob-cta" onclick="onboardingNext()">Get started →</button><div class="ob-skip" onclick="closeOnboarding();showAuthOverlay()">Already have an account? Sign in →</div></div>`;
     return;
   }
   if (obStep === 2) {
@@ -5431,7 +5741,8 @@ function renderOnboardingStep() {
       3: `<div class="ob-step"><div class="ob-label">What should we call you?</div><input class="ob-input" id="ob-name" type="text" placeholder="e.g. Lauren" /><button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button><div class="ob-skip" onclick="onboardingNext()">Skip</div></div>`,
       4: `<div class="ob-step"><div class="ob-label">Baby's nickname?</div><div class="ob-sublabel" style="margin-bottom:8px;">Optional — used throughout the app.</div><input class="ob-input" id="ob-baby" type="text" placeholder="e.g. Peanut" /><button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button><div class="ob-skip" onclick="onboardingNext()">Skip</div></div>`,
       5: `<div class="ob-step"><div class="ob-label">When is the baby due?</div><input class="ob-input ob-date" id="ob-due" type="date" value="2027-05-10" /><button class="card-btn primary ob-cta" onclick="onboardingNext()">Continue →</button></div>`,
-      6: `<div class="ob-welcome"><div style="font-size:2.5rem">🎉</div><h2 class="ob-title">You're all set${namePart}</h2><p class="ob-sub">Your app is ready. Journal, library, shopping, hospital bag — all yours. Change anything in Settings.</p><button class="card-btn primary ob-cta" onclick="onboardingDone()">Open the app →</button></div>`,
+      6: `<div class="ob-step"><div class="ob-label">Link to your partner’s journey</div><div class="ob-sublabel" style="margin-bottom:12px;">Optional — skip and do this later in Settings.</div><input class="ob-input" id="ob-family-code" type="text" maxlength="6" placeholder="e.g. ZK4M9R" style="font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.12em;" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')obFamilyLinkAndNext()" /><button class="card-btn primary ob-cta" onclick="obFamilyLinkAndNext()">Link &amp; continue →</button><div class="ob-skip" onclick="onboardingNext()">Skip for now</div></div>`,
+      7: `<div class="ob-welcome"><div style="font-size:2.5rem">🎉</div><h2 class="ob-title">You’re all set${namePart}</h2><p class="ob-sub">Your app is ready. Journal, library, shopping, hospital bag — all yours. Change anything in Settings.</p><button class="card-btn primary ob-cta" onclick="onboardingDone()">Open the app →</button></div>`,
     };
     html = steps[obStep] || '';
   } else {
@@ -5515,7 +5826,7 @@ function onboardingDone() {
 const screens=['home','todo','mystuff','budget','shopping','bag','library','journal'];
 function reflectInJournal(){
   go('journal');
-  jDraft={body:'',isLetter:false,promptText:'',showPrompts:false,editingId:null};
+  jDraft={body:'',isLetter:false,promptText:'',showPrompts:false,editingId:null,visibility:'private'};
   jView='write';
   renderJournal();
   updateJournalHeader();
@@ -5523,7 +5834,7 @@ function reflectInJournal(){
 function openJournalPrompt(){
   const prompt=JOURNAL_PROMPTS_SHORT[Math.floor(Date.now()/86400000)%JOURNAL_PROMPTS_SHORT.length];
   go('journal');
-  jDraft={body:'',isLetter:false,promptText:prompt,showPrompts:false,editingId:null};
+  jDraft={body:'',isLetter:false,promptText:prompt,showPrompts:false,editingId:null,visibility:'private'};
   jView='write';
   renderJournal();
   updateJournalHeader();
@@ -5575,14 +5886,33 @@ window.addEventListener('unhandledrejection',function(e){
   <div style="padding:4px 32px 32px;" id="onboarding-body"></div>
 </div>
 <div id="auth-overlay" class="auth-overlay">
+  <div id="auth-restoring" style="display:none;flex-direction:column;align-items:center;gap:16px;text-align:center;padding:40px 24px;max-width:360px;">
+    <div class="auth-mark">&#9675;</div>
+    <h2 class="auth-title">Restoring your <em>account&#8230;</em></h2>
+    <p class="auth-sub">Loading your journey data. Just a moment.</p>
+    <div class="auth-spinner"></div>
+  </div>
   <div class="auth-card">
     <div class="auth-mark">&#9675;</div>
     <h2 class="auth-title">Daddy <em>Duty</em></h2>
-    <p class="auth-sub">Enter your email to sign in.<br>We'll send you a magic link — no password needed.</p>
-    <input type="email" id="auth-email" class="auth-input" placeholder="your@email.com"
-           onkeydown="if(event.key==='Enter')sendMagicLink()" autocomplete="email" />
-    <button class="auth-btn" id="auth-submit-btn" onclick="sendMagicLink()">Send magic link &rarr;</button>
-    <div class="auth-msg" id="auth-msg"></div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="auth-tab-return" onclick="setAuthTab('return')">Already have an account</button>
+      <button class="auth-tab" id="auth-tab-new" onclick="setAuthTab('new')">New here</button>
+    </div>
+    <div id="auth-panel-return">
+      <p class="auth-sub">Enter the email you signed up with. We&#8217;ll send a link &#8212; your data will be waiting.</p>
+      <input type="email" id="auth-email" class="auth-input" placeholder="your@email.com"
+             onkeydown="if(event.key==='Enter')sendMagicLink()" autocomplete="email" />
+      <button class="auth-btn" id="auth-submit-btn" onclick="sendMagicLink()">Send sign-in link &rarr;</button>
+      <div class="auth-msg" id="auth-msg"></div>
+    </div>
+    <div id="auth-panel-new" style="display:none;">
+      <p class="auth-sub">Create your account with an email. No password needed.</p>
+      <input type="email" id="auth-email-new" class="auth-input" placeholder="your@email.com"
+             onkeydown="if(event.key==='Enter')sendMagicLinkNew()" autocomplete="email" />
+      <button class="auth-btn" id="auth-submit-new" onclick="sendMagicLinkNew()">Create account &rarr;</button>
+      <div class="auth-msg" id="auth-msg-new"></div>
+    </div>
     <div class="auth-fine">firstdad.app &middot; private &amp; secure</div>
     <div class="auth-links">
       <button class="auth-link-btn" onclick="showPrivacy()">Privacy Policy</button>
