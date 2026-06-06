@@ -1145,7 +1145,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v5.0 · cloud sync</span>
+      <span class="brand-meta">v5.1 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -2151,9 +2151,10 @@ const SEED_TASKS = [
   { phase:'pre-transfer', cat:'Logistics',  tags:['GC'],         title:'Confirm {{GC}} has scheduled monitoring clinic appointments' },
   { phase:'pre-transfer', cat:'Emotional',  tags:['GC','Wife'],  title:'Meet or re-connect with {{GC}} before transfer' },
   { phase:'pre-transfer', cat:'Partner',    tags:['GC'],         title:'Agree with {{GC}} on communication cadence' },
-  { phase:'pre-transfer', cat:'Emotional',  tags:['Wife'],       title:'Decide with {{partner}} what names you will each go by as parents' },
-  { phase:'pre-transfer', cat:'Emotional',  tags:['Wife'],       title:'Agree with {{partner}} on how and when to tell family and friends about the transfer' },
-  { phase:'pre-transfer', cat:'Medical',    tags:['GC','Wife'],  title:'Decide on induced lactation before transfer — starting the protocol takes months' },
+  { phase:'pre-transfer', cat:'Emotional',  tags:['Wife','has-partner'], title:'Decide with {{partner}} what names you will each go by as parents' },
+  { phase:'pre-transfer', cat:'Emotional',  tags:['Wife','has-partner'], title:'Agree with {{partner}} on how and when to tell family and friends about the transfer' },
+  { phase:'pre-transfer', cat:'Medical',    tags:['GC','Wife','has-partner'], title:'Decide on induced lactation before transfer — starting the protocol takes months' },
+  { phase:'pre-transfer', cat:'Emotional',  tags:['prior-loss'], title:'Connect with a loss-informed therapist before transfer — carrying grief into hope takes its own kind of support' },
   { phase:'pre-transfer', cat:'Logistics',  tags:[],             title:'Save fertility clinic, agency coordinator, and attorney numbers in your phone' },
   { phase:'pre-transfer', cat:'Logistics',  tags:[],             title:'Build a shortlist of 5 pediatricians in your area' },
   { phase:'pre-transfer', cat:'Self',       tags:[],             title:'Write your first journal entry' },
@@ -2162,14 +2163,14 @@ const SEED_TASKS = [
   // FIRST TRIMESTER (11)
   { phase:'first', cat:'Medical',   tags:['GC'],         title:'Attend or Zoom into the first beta hCG confirmation call' },
   { phase:'first', cat:'Medical',   tags:[],             title:'Attend or Zoom into the 6–8 week heartbeat ultrasound' },
-  { phase:'first', cat:'Emotional', tags:['GC','Wife'],  title:'Mark the moment with {{partner}} when {{GC}} is discharged from the fertility clinic to OB care' },
+  { phase:'first', cat:'Emotional', tags:['GC','Wife','has-partner'], title:'Mark the moment with {{partner}} when {{GC}} is discharged from the fertility clinic to OB care' },
   { phase:'first', cat:'Emotional', tags:[],             title:'Decide on public announcement strategy and timing' },
   { phase:'first', cat:'Legal',     tags:[],             title:'Confirm your health insurance plan will cover the baby from birth' },
   { phase:'first', cat:'Legal',     tags:[],             title:'Get the insurance enrollment paperwork list and deadlines from HR' },
   { phase:'first', cat:'Legal',     tags:['GC'],         title:'Identify your attorney for the pre-birth order and confirm engagement' },
   { phase:'first', cat:'Logistics', tags:[],             title:'Start a documents folder for all journey paperwork' },
   { phase:'first', cat:'Medical',   tags:[],             title:'Schedule your first pediatrician interview' },
-  { phase:'first', cat:'Partner',   tags:['Wife'],       title:'Book a date with {{partner}} before things get busy' },
+  { phase:'first', cat:'Partner',   tags:['Wife','has-partner'], title:'Book a date with {{partner}} before things get busy' },
   { phase:'first', cat:'Self',      tags:['GC'],         title:'Ask your agency for a list of recommended books for intended fathers' },
   // SECOND TRIMESTER (19)
   { phase:'second', cat:'Legal',     tags:['GC'],   title:'Confirm with your attorney that the pre-birth order filing is underway' },
@@ -2203,11 +2204,11 @@ const SEED_TASKS = [
   { phase:'third', cat:'Financial', tags:[],             title:'Stock the nursery: newborn and size-1 diapers, wipes, diaper cream, onesies' },
   { phase:'third', cat:'Logistics', tags:[],             title:'Stock the kitchen: bottles, formula if using, sterilizer, bottle brush' },
   { phase:'third', cat:'Financial', tags:[],             title:'Do a final shopping list review — confirm needs are covered' },
-  { phase:'third', cat:'Logistics', tags:['Wife'],       title:"Pack hospital bags × 3: yours, {{partner}}'s, and baby's" },
+  { phase:'third', cat:'Logistics', tags:['Wife','has-partner'], title:"Pack hospital bags × 3: yours, {{partner}}'s, and baby's" },
   { phase:'third', cat:'Legal',     tags:['GC'],         title:'Pack the documents folder: pre-birth order, IDs, insurance, GCA, attorney card' },
   { phase:'third', cat:'Legal',     tags:['GC'],         title:'Prefill birth certificate worksheet if your state allows' },
-  { phase:'third', cat:'Emotional', tags:['GC','Wife'],  title:'Walk through the delivery-day plan with {{GC}}, agency, and {{partner}}' },
-  { phase:'third', cat:'Emotional', tags:['GC'],         title:'Confirm the delivery room guest list with {{GC}} and the hospital' },
+  { phase:'third', cat:'Emotional', tags:['GC','Wife','has-partner'], title:'Walk through the delivery-day plan with {{GC}}, agency, and {{partner}}' },
+  { phase:'third', cat:'Emotional', tags:['GC','in-room-birth'], title:'Confirm the delivery room guest list with {{GC}} and the hospital' },
   { phase:'third', cat:'Logistics', tags:[],             title:"Save the hospital, {{GC}}'s address, and pediatrician's office in your maps app" },
   { phase:'third', cat:'Partner',   tags:['Wife'],       title:'Prepare or arrange freezer meals for the first two weeks home' },
   { phase:'third', cat:'Logistics', tags:[],             title:'Set up a bassinet in your bedroom for baby' },
@@ -2218,10 +2219,11 @@ const SEED_TASKS = [
   // FINAL WEEKS (7)
   { phase:'final', cat:'Logistics', tags:[],       title:'Pack a labor go-bag in both cars' },
   { phase:'final', cat:'Logistics', tags:[],       title:'Keep cameras and phones charged' },
-  { phase:'final', cat:'Partner',   tags:['Wife'], title:"Plan a last couple's getaway before delivery — babymoon, IP edition" },
+  { phase:'final', cat:'Partner',   tags:['Wife','has-partner'], title:"Plan a last couple's getaway before delivery — babymoon, IP edition" },
   { phase:'final', cat:'Emotional', tags:[],       title:'Write a letter to your child for delivery day' },
   { phase:'final', cat:'Medical',   tags:['GC'],   title:"Review {{GC}}'s birth plan one final time" },
   { phase:'final', cat:'Logistics', tags:[],       title:'Confirm emergency contacts and have a friend or family member on standby' },
+  { phase:'final', cat:'Logistics', tags:['GC','remote-gc'], title:'Confirm your travel logistics for birth — flights, accommodation, and a plan if {{GC}} goes early' },
   { phase:'final', cat:'Self',      tags:[],       title:'Prioritize sleep' },
   // POST-BIRTH (11)
   { phase:'post-birth', cat:'Legal',     tags:['GC'],   title:"Sign the hospital paperwork to leave as baby's legal parents" },
@@ -2229,11 +2231,11 @@ const SEED_TASKS = [
   { phase:'post-birth', cat:'Legal',     tags:[],       title:'Add baby to your health insurance plan' },
   { phase:'post-birth', cat:'Legal',     tags:[],       title:"Apply for baby's Social Security number" },
   { phase:'post-birth', cat:'Medical',   tags:[],       title:"Attend baby's first pediatrician visit — usually within 3–5 days of birth" },
-  { phase:'post-birth', cat:'Partner',   tags:['Wife'], title:'Establish a shift schedule with {{partner}} for the first two weeks' },
+  { phase:'post-birth', cat:'Partner',   tags:['Wife','has-partner'], title:'Establish a shift schedule with {{partner}} for the first two weeks' },
   { phase:'post-birth', cat:'Legal',     tags:['GC'],   title:'Schedule a post-placement consult with your attorney' },
   { phase:'post-birth', cat:'Emotional', tags:['GC'],   title:'Maintain your agreed communication cadence with {{GC}} through her postpartum recovery' },
   { phase:'post-birth', cat:'Self',      tags:[],       title:'Check in on yourself: paternal PPD is real' },
-  { phase:'post-birth', cat:'Partner',   tags:['Wife'], title:'Check in on {{partner}}: grief, joy, or both are valid' },
+  { phase:'post-birth', cat:'Partner',   tags:['Wife','has-partner'], title:'Check in on {{partner}}: grief, joy, or both are valid' },
   { phase:'post-birth', cat:'Logistics', tags:[],       title:'Send birth announcements to family and friends' }
 ];
 
@@ -2380,9 +2382,22 @@ function renderSummary(){
 
 function renderHomeCount(){const total=state.tasks.length,done=state.tasks.filter(t=>t.status==='done').length;const el=document.getElementById('todo-progress');if(el)el.innerHTML=`<strong>${done}</strong> of ${total} done`;}
 
+function situationSuppressed(tags){
+  if(!tags||!tags.length)return false;
+  const s=state.settings;
+  if(tags.includes('remote-gc')&&s.gcDistance==='same-state')return true;
+  if(tags.includes('same-state-gc')&&s.gcDistance==='different-state')return true;
+  if(tags.includes('first-time-parent')&&s.isFirstTimeParent===false)return true;
+  if(tags.includes('prior-loss')&&s.priorLoss===false)return true;
+  if(tags.includes('has-partner')&&s.isPartnered===false)return true;
+  if(tags.includes('in-room-birth')&&s.birthAttendance!=='in-room')return true;
+  return false;
+}
+
 function passesFilter(t){
   if(!isSurrogacyPath(state.settings.familyPath)&&t.tags&&t.tags.includes('GC'))return false;
   if((state.settings||{}).userRole==='partner'&&t.tags&&t.tags.includes('GC'))return false;
+  if(situationSuppressed(t.tags))return false;
   if(state.filters.status==='open'&&t.status!=='open')return false;
   if(state.filters.status==='done'&&t.status!=='done')return false;
   if(state.filters.cat.size>0&&!state.filters.cat.has(t.cat))return false;
@@ -3104,6 +3119,35 @@ const JOURNAL_PROMPTS = {
   ],
 };
 
+const SITUATION_JOURNAL_PROMPTS = {
+  'remote-gc': [
+    "Your GC is carrying your child from another city. Write about what the distance feels like.",
+    "What does it mean to trust someone so completely when they're so far away?",
+  ],
+  'prior-loss': [
+    "You've carried loss into this. What does hope feel like alongside that weight?",
+    "Write about what this pregnancy means in the context of what came before.",
+  ],
+  'first-time-parent': [
+    "Write about the first time it really hit you that you were going to be a dad.",
+    "What kind of father do you want to be? Specific and honest, not aspirational.",
+  ],
+  'has-partner': [
+    "Write to your partner about what this journey has meant to your relationship.",
+    "What has this done to the two of you — the hard parts, and the parts that brought you closer?",
+  ],
+};
+
+function getSituationPrompts(){
+  const s=state.settings;
+  const prompts=[];
+  if(s.gcDistance==='different-state')prompts.push(...(SITUATION_JOURNAL_PROMPTS['remote-gc']||[]));
+  if(s.priorLoss===true)prompts.push(...(SITUATION_JOURNAL_PROMPTS['prior-loss']||[]));
+  if(s.isFirstTimeParent===true)prompts.push(...(SITUATION_JOURNAL_PROMPTS['first-time-parent']||[]));
+  if(s.isPartnered===true)prompts.push(...(SITUATION_JOURNAL_PROMPTS['has-partner']||[]));
+  return prompts;
+}
+
 const JOURNAL_EVERGREEN = [
   "Write a letter to your kid. Start with: 'Today you don't exist yet, but…'",
   "What's one thing you want to remember about today?",
@@ -3213,7 +3257,7 @@ function renderJournalList(el) {
 function renderJournalWrite(el) {
   const today = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   const phasePrompts = JOURNAL_PROMPTS[getCurrentPhase()]||[];
-  const allPrompts = [...phasePrompts,...JOURNAL_EVERGREEN];
+  const allPrompts = [...phasePrompts,...getSituationPrompts(),...JOURNAL_EVERGREEN];
   const charCount = (jDraft.body||'').length;
 
   const promptCardHtml = jDraft.promptText ? `
@@ -5151,7 +5195,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.0'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.1'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
