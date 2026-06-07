@@ -1145,7 +1145,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v5.1 · cloud sync</span>
+      <span class="brand-meta">v5.2 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1366,6 +1366,7 @@
       <div class="detail-header-text">
         <h1>Year 1 <em>Budget</em></h1>
         <p>25 categories. Real 2026 pricing. Your journey costs first, then baby gear by category. Tier ballparks for every item — enter your own price or tap one to set it.</p>
+        <p style="font-size:11px;color:var(--ink-muted);margin-top:6px;">Product recommendations may include affiliate links. As an Amazon Associate, we earn from qualifying purchases at no extra cost to you.</p>
       </div>
       <div class="detail-header-tools"><button class="tiny-btn" onclick="estimateFrom('v')">Fill mid-range</button></div>
     </div>
@@ -1380,6 +1381,7 @@
       <div class="detail-header-text">
         <h1>Shopping <em>List</em></h1>
         <p>Essential · Helpful · Luxury. Tap a filter to narrow by what matters to you.</p>
+        <p style="font-size:11px;color:var(--ink-muted);margin-top:6px;">Some product links may be affiliate links. As an Amazon Associate, we earn from qualifying purchases at no extra cost to you.</p>
       </div>
     </div>
     <div class="mystuff-tabs" id="shop-tabs"></div>
@@ -1644,6 +1646,9 @@
     <button class="picker-close" onclick="closeProductIdeas()">×</button>
   </div>
   <div style="overflow-y:auto;flex-grow:1;padding:0 20px 20px;">
+    <div style="font-size:11px;color:var(--ink-muted);padding:10px 12px;background:var(--cream-deep);border-radius:var(--r-sm);margin-bottom:14px;line-height:1.5;">
+      Some links in this section may be affiliate links. As an Amazon Associate, we earn from qualifying purchases — at no extra cost to you. This never influences our recommendations.
+    </div>
     <div id="ideas-content"></div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;">
       <span style="font-size:12px;color:var(--ink-muted);">More options, filters, and comparisons</span>
@@ -5195,7 +5200,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.1'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.2'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -6004,7 +6009,17 @@ window.addEventListener('unhandledrejection',function(e){
       </ul>
       <p style="font-size:12px;color:var(--ink-muted);">Questions? <strong>granthansell@gmail.com</strong></p>
     </div>
+    <div class="privacy-section" style="border-top:1px solid var(--rule);padding-top:20px;">
+      <h4>Affiliate Links</h4>
+      <ul>
+        <li><strong>What this means.</strong> Some product links in the Budget and Shopping modules are affiliate links. If you click a link and make a purchase, we may earn a small commission at no additional cost to you.</li>
+        <li><strong>Amazon.</strong> As an Amazon Associate, we earn from qualifying purchases.</li>
+        <li><strong>Our recommendations are independent.</strong> Affiliate relationships do not influence which products appear or how they are described. Recommendations reflect genuine research and editorial judgment.</li>
+        <li><strong>You can opt out.</strong> You are never required to use affiliate links. You can search for any recommended product directly.</li>
+      </ul>
+    </div>
   </div>
+</div>
 </div>
 </body>
 </html>
