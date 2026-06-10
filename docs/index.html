@@ -214,6 +214,23 @@
   .card-btn.ghost { background:transparent; color:var(--cream); border:1px solid rgba(245,237,224,.25); }
   .card-btn.ghost:hover { border-color:var(--cream); }
   .streak-strip { display:flex; justify-content:center; gap:8px; margin-top:18px; }
+  .card-source-line { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:rgba(245,237,224,.4); margin-bottom:4px; position:relative; }
+  .card-milestone-badge { display:inline-flex; align-items:center; gap:5px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; margin-bottom:10px; position:relative; }
+  .card-milestone-badge .ms-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .ms-dot-done { background:var(--sage,#7a8b6b); }
+  .ms-dot-in-progress { background:var(--honey,#e8b547); }
+  .ms-dot-not-started { background:rgba(245,237,224,.3); }
+  .ms-label-done { color:var(--sage,#7a8b6b); }
+  .ms-label-in-progress { color:var(--honey,#e8b547); }
+  .ms-label-not-started { color:rgba(245,237,224,.3); }
+  .card-continue-reading { margin-top:16px; padding:11px 15px; border:1px solid rgba(245,237,224,.12); border-radius:var(--r-md,10px); display:flex; align-items:center; gap:10px; position:relative; }
+  .card-continue-reading a { color:var(--terracotta-soft,#d4856b); font-size:13px; font-weight:500; text-decoration:none; }
+  .card-continue-reading a:hover { text-decoration:underline; }
+  .card-continue-reading.no-url { opacity:.4; pointer-events:none; }
+  .card-continue-reading .cr-icon { font-size:14px; color:rgba(245,237,224,.4); }
+  .card-continue-reading .cr-text { display:flex; flex-direction:column; gap:1px; }
+  .card-continue-reading .cr-action { font-size:12px; font-weight:500; color:var(--terracotta-soft,#d4856b); }
+  .card-continue-reading .cr-label { font-size:10px; font-family:'IBM Plex Mono',monospace; color:rgba(245,237,224,.4); text-transform:uppercase; letter-spacing:.06em; }
   .streak-dot-hub { width:22px; height:22px; border-radius:50%; background:var(--cream-deep); border:1.5px solid var(--cream-deeper); display:flex; align-items:center; justify-content:center; font-size:9px; font-family:'IBM Plex Mono',monospace; color:var(--ink-muted); }
   .streak-dot-hub.on { background:var(--terracotta); border-color:var(--terracotta); color:var(--cream); }
   .streak-dot-hub.today { background:var(--honey); border-color:var(--ink); color:var(--ink); font-weight:600; }
@@ -1145,7 +1162,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v5.2 · cloud sync</span>
+      <span class="brand-meta">v5.3 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1169,8 +1186,11 @@
 
     <div class="todays-card" id="home-card-wrap">
       <div class="todays-eyebrow" id="home-card-eyebrow">◉ Today's card</div>
+      <div class="card-source-line" id="home-card-source"></div>
+      <div id="home-card-milestone-badge"></div>
       <h2 class="todays-title" id="home-card-title">Loading today's card…</h2>
       <p class="todays-body" id="home-card-body"></p>
+      <div id="home-card-continue"></div>
       <div id="home-question-wrap"></div>
       <div class="todays-actions">
         <button class="card-btn primary" id="mark-read-btn" onclick="markCardRead()">Mark as read · +10 XP</button>
@@ -2265,7 +2285,7 @@ let state = {
   budgetCustomItems:[], budgetAddingGroup:null, shopping:{},
   journal:[],
   xp:0, streak:0, lastCheckinDate:'', readCardIds:[], dailyCardLog:{}, hospitalBag:null,
-  completedMilestones:[], mutedTracks:[], mutedSensitivity:[], questionLog:{},
+  completedMilestones:[], milestoneStatus:{}, mutedTracks:[], mutedSensitivity:[], questionLog:{},
   settings:{
     name:'', partnerName:'', babyNickname:'',
     familyPath:'gestational-surrogacy',
@@ -2284,7 +2304,7 @@ function deleteItem(type,id){const b=BUCKET[type];if(!b)return;const idx=(state.
 
 function seedIfEmpty(){
   const raw=localStorage.getItem(STORAGE_KEY);
-  if(raw){try{const p=JSON.parse(raw);if(p.tasks&&p.tasks.length>0){state.tasks=p.tasks;state.myStuff=p.myStuff||{links:[],contacts:[],documents:[]};['links','contacts','documents'].forEach(k=>{if(!state.myStuff[k])state.myStuff[k]=[];});state.tasks.forEach(t=>{if(!t.attachments)t.attachments=[];if(t.dueDate===undefined)t.dueDate='';});state.thisWeek=new Set(p.thisWeek||[]);state.budget=p.budget||{};state.shopping=p.shopping||{};state.budgetCustomItems=p.budgetCustomItems||[];state.journal=p.journal||[];state.xp=p.xp||0;state.streak=p.streak||0;state.lastCheckinDate=p.lastCheckinDate||'';state.readCardIds=p.readCardIds||[];state.dailyCardLog=p.dailyCardLog||{};state.hospitalBag=p.hospitalBag||initHospitalBag();state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',gcName:'',transferDateStr:'',gcDistance:null,priorLoss:null,isFirstTimeParent:null,isPartnered:null,birthAttendance:null,userRole:null,linkedIpUserId:null,linkedIpCode:null,familyCode:null,sectionVisibility:{tasks:'shared',budget:'shared',shopping:'shared',hospitalBag:'shared',journal:'private',myStuffLinks:'shared',myStuffContacts:'shared',myStuffDocuments:'shared'}},p.settings||{});if(state.settings.familyPath==='adoption')state.settings.familyPath='ivf';state.completedMilestones=p.completedMilestones||[];state.mutedTracks=p.mutedTracks||[];state.mutedSensitivity=p.mutedSensitivity||[];state.questionLog=p.questionLog||{};initBudgetState();return;}}catch{}}
+  if(raw){try{const p=JSON.parse(raw);if(p.tasks&&p.tasks.length>0){state.tasks=p.tasks;state.myStuff=p.myStuff||{links:[],contacts:[],documents:[]};['links','contacts','documents'].forEach(k=>{if(!state.myStuff[k])state.myStuff[k]=[];});state.tasks.forEach(t=>{if(!t.attachments)t.attachments=[];if(t.dueDate===undefined)t.dueDate='';});state.thisWeek=new Set(p.thisWeek||[]);state.budget=p.budget||{};state.shopping=p.shopping||{};state.budgetCustomItems=p.budgetCustomItems||[];state.journal=p.journal||[];state.xp=p.xp||0;state.streak=p.streak||0;state.lastCheckinDate=p.lastCheckinDate||'';state.readCardIds=p.readCardIds||[];state.dailyCardLog=p.dailyCardLog||{};state.hospitalBag=p.hospitalBag||initHospitalBag();state.settings=Object.assign({name:'',partnerName:'',babyNickname:'',familyPath:'gestational-surrogacy',dueDateStr:'2027-05-10',currentPhase:'pre-transfer',gcName:'',transferDateStr:'',gcDistance:null,priorLoss:null,isFirstTimeParent:null,isPartnered:null,birthAttendance:null,userRole:null,linkedIpUserId:null,linkedIpCode:null,familyCode:null,sectionVisibility:{tasks:'shared',budget:'shared',shopping:'shared',hospitalBag:'shared',journal:'private',myStuffLinks:'shared',myStuffContacts:'shared',myStuffDocuments:'shared'}},p.settings||{});if(state.settings.familyPath==='adoption')state.settings.familyPath='ivf';state.completedMilestones=p.completedMilestones||[];state.milestoneStatus=p.milestoneStatus||{};(state.completedMilestones||[]).forEach(tag=>{if(!state.milestoneStatus[tag])state.milestoneStatus[tag]='done';});state.mutedTracks=p.mutedTracks||[];state.mutedSensitivity=p.mutedSensitivity||[];state.questionLog=p.questionLog||{};initBudgetState();return;}}catch{}}
   const legacyRaw=localStorage.getItem(LEGACY_KEY_V22);
   if(legacyRaw){try{const legacy=JSON.parse(legacyRaw);if(legacy.tasks&&legacy.tasks.length>0){state.tasks=legacy.tasks.map(t=>({...t,attachments:[]}));legacy.tasks.forEach((lt,ti)=>{(lt.attachments||[]).forEach(a=>{if(!a||!a.type)return;if(a.type==='file'){a.type='document';a.label=a.name||a.label||'Untitled';a.url=a.url||'';}if(a.type==='link'){const item=createItem('link',{label:a.label||'Untitled link',url:a.url||''});state.tasks[ti].attachments.push({type:'link',id:item.id});}else if(a.type==='document'){const item=createItem('document',{label:a.label||'Untitled document',url:a.url||''});state.tasks[ti].attachments.push({type:'document',id:item.id});}else if(a.type==='contact'){const item=createItem('contact',{name:a.name||'Untitled',role:a.role||'',phone:a.phone||'',email:a.email||'',note:a.note||''});state.tasks[ti].attachments.push({type:'contact',id:item.id});}});});state.phaseCollapsed=legacy.phaseCollapsed?new Set(legacy.phaseCollapsed):new Set(PHASES.map(p=>p.id).filter(id=>id!==getCurrentPhase()));save();return;}}catch{}}
   state.tasks=SEED_TASKS.map(t=>({id:uid(),title:t.title,notes:'',cat:t.cat,tags:t.tags.slice(),phase:t.phase,pinned:false,status:'open',steps:[],attachments:[],dueDate:'',createdBy:'seed'}));
@@ -2299,7 +2319,7 @@ function seedIfEmpty(){
 }
 
 function save(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),completedMilestones:state.completedMilestones||[],mutedTracks:state.mutedTracks||[],mutedSensitivity:state.mutedSensitivity||[],questionLog:state.questionLog||{},settings:state.settings||{},_savedAt:Date.now()};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),completedMilestones:Object.keys(state.milestoneStatus||{}).filter(k=>(state.milestoneStatus||{})[k]==='done'),milestoneStatus:state.milestoneStatus||{},mutedTracks:state.mutedTracks||[],mutedSensitivity:state.mutedSensitivity||[],questionLog:state.questionLog||{},settings:state.settings||{},_savedAt:Date.now()};
   try{const _r=JSON.stringify(snap);localStorage.setItem(STORAGE_KEY,_r);console.debug('State size:',(_r.length/1024).toFixed(1)+'KB');}catch(e){if(e&&e.name==='QuotaExceededError')showToast('Storage full — export a backup to free space');}
   debouncedCloudSave();
 }
@@ -2902,6 +2922,7 @@ function toggleBudgetRegistry(id,e){e&&e.stopPropagation();if(!state.budget[id])
 function setBudgetActual(id,val){if(!state.budget[id])state.budget[id]=defaultBudgetEntry();const n=parseFloat(val);state.budget[id].actual=isNaN(n)?null:n;const ci=(state.budgetCustomItems||[]).find(c=>c.id===id);if(ci)ci.actual=state.budget[id].actual;save();}
 function setBudgetField(id,field,val){if(!state.budget[id])state.budget[id]=defaultBudgetEntry();state.budget[id][field]=val;const ci=(state.budgetCustomItems||[]).find(c=>c.id===id);if(ci)ci[field]=val;save();}
 function getShoppingStatus(cat){if(!cat.shoppingMatch)return null;return(state.shopping[cat.shoppingMatch]||{}).bought||false;}
+function getBudgetCatForShopItem(shId){return BUDGET_CATS.find(c=>c.shoppingMatch===shId)||null;}
 function getPricedCount(){return[...BUDGET_CATS,...getJourneyCats(),...(state.budgetCustomItems||[])].filter(c=>getBudgetPrice(c)!=null).length;}
 function getTotalItems(){return BUDGET_CATS.length+getJourneyCats().length+(state.budgetCustomItems||[]).length;}
 function showAddItemForm(group){state.budgetAddingGroup=group;renderBudgetModule();}
@@ -3045,7 +3066,7 @@ function renderBudgetCat(cat,isSurro=false,isCustom=false){
       ${df!=null?`<span class="be-actual-display ${df>0?'over':'under'}">${df>0?'+':'-'}${fmtMoney(Math.abs(df))} vs. planned</span>`:''}
       ${isCustom&&state.settings.familyCode?visToggleHtml(cat.id,'budgetCustom',cat.visibility):''}
       ${isCustom?`<span class="be-delete" onclick="removeCustomItem('${cat.id}')">Delete item</span>`:''}
-      ${!isCustom&&!isSurro?`<span class="be-shopping-link" onclick="event.stopPropagation();openProductIdeas('${cat.id}')">↗ Product ideas</span>`:''}
+      ${!isCustom&&!isSurro?`<span class="be-shopping-link" onclick="event.stopPropagation();openProductIdeas('${cat.id}')">↗ Product options</span>`:''}
     </div>
   </div>`:'';
 
@@ -3143,6 +3164,78 @@ const SITUATION_JOURNAL_PROMPTS = {
   ],
 };
 
+const MILESTONE_JOURNAL_PROMPTS = {
+  'gca-signed': {
+    'not-started': [
+      `You haven't started on your Gestational Carrier Agreement yet. What's on your mind about that part of the process?`,
+      `The GCA is the legal backbone of this arrangement. What do you know about it so far — and what feels uncertain?`,
+    ],
+    'in-progress': [
+      `Your GCA is in the works. What have you learned about it that surprised you?`,
+      `Negotiating a GCA means thinking through scenarios you hope never happen. Write about how that feels.`,
+    ],
+    'done': [
+      `Your GCA is fully executed. What was the most important clause you paid attention to?`,
+      `The GCA is signed. Write about what it feels like to have that piece of the foundation in place.`,
+    ],
+  },
+  'pre-birth-order': {
+    'not-started': [
+      `The pre-birth order is what makes you the legal parent at birth. Write about what that process means to you.`,
+    ],
+    'in-progress': [
+      `You're in the middle of the PBO process. What's the status — and what part of it weighs on you most?`,
+    ],
+    'done': [
+      `The pre-birth order is done. Write about what it felt like to have legal parenthood confirmed before your child was born.`,
+    ],
+  },
+  'pediatrician': {
+    'not-started': [
+      `You're still looking for a pediatrician. What does the right fit look like to you for your child's first doctor?`,
+    ],
+    'in-progress': [
+      `You're in the pediatrician search. What are you learning about what matters to you in a doctor for your kid?`,
+    ],
+    'done': [
+      `Pediatrician chosen. Write about what tipped the decision — and what you're looking forward to in that first visit.`,
+    ],
+  },
+  'car-seat': {
+    'not-started': [
+      `The car seat is on the list. Write about the moment you realized this was really happening — that a baby is actually coming home with you.`,
+    ],
+    'in-progress': [
+      `The car seat is bought but not installed. What else feels half-done right now? Write about what the to-do list feels like.`,
+    ],
+    'done': [
+      `Car seat: installed and inspected. Write about one thing you've checked off that made it feel more real.`,
+    ],
+  },
+  'nursery': {
+    'not-started': [
+      `The nursery isn't done yet. What does the room look like in your head — and what's standing between that and where it is now?`,
+    ],
+    'in-progress': [
+      `The nursery is in progress. Write about what it felt like to start setting it up — or what it feels like to walk into that room right now.`,
+    ],
+    'done': [
+      `The nursery is ready. Write a letter to the kid about the room you made for them.`,
+    ],
+  },
+  'doc-folder': {
+    'not-started': [
+      `Your document folder isn't set up yet. What's the one document you'd be most stressed to not find in an emergency?`,
+    ],
+    'in-progress': [
+      `Your docs are scattered but you're working on it. What has this revealed about how you handle logistics under pressure?`,
+    ],
+    'done': [
+      `Documents organized. Write about the moment you felt like you were actually on top of this whole thing.`,
+    ],
+  },
+};
+
 function getSituationPrompts(){
   const s=state.settings;
   const prompts=[];
@@ -3150,6 +3243,11 @@ function getSituationPrompts(){
   if(s.priorLoss===true)prompts.push(...(SITUATION_JOURNAL_PROMPTS['prior-loss']||[]));
   if(s.isFirstTimeParent===true)prompts.push(...(SITUATION_JOURNAL_PROMPTS['first-time-parent']||[]));
   if(s.isPartnered===true)prompts.push(...(SITUATION_JOURNAL_PROMPTS['has-partner']||[]));
+  const ms=state.milestoneStatus||{};
+  Object.entries(ms).forEach(([tag,status])=>{
+    const p=(MILESTONE_JOURNAL_PROMPTS[tag]||{})[status];
+    if(p)prompts.push(...p);
+  });
   return prompts;
 }
 
@@ -3451,7 +3549,7 @@ function resolveTokens(title){
 /* ── LIBRARY CARDS DATA + ENGINE (v2.15 phase-pool architecture) ── */
 const MILESTONE_TAGS = ['pediatrician','daycare','car-seat','nursery','pre-birth-order',
   'insurance','leave-paperwork','hospital-tour','infant-cpr','birth-plan',
-  'cord-blood','doc-folder','wills','announcements'];
+  'cord-blood','doc-folder','wills','announcements','support-network','gca-signed'];
 
 const LIBRARY_CARDS = [
   // ── PREPARING (pre-transfer) — 37 cards ──
@@ -3484,7 +3582,7 @@ const LIBRARY_CARDS = [
    title:`Understanding your GC's medical protocol`,
    body:`Before transfer, your GC undergoes a preparation protocol — typically involving synthetic estrogen to thicken the uterine lining, followed by progesterone to prepare for implantation. This protocol lasts several weeks and involves multiple monitoring appointments. Your GC will be taking medications, attending regular clinic visits, and managing her own schedule around all of this. Understanding what she's going through — without being intrusive — helps you be a better partner in the process. Ask your agency coordinator what the typical protocol looks like so you're not surprised.`},
   {id:'a-008',phase:'preparing',weekRange:null,track:'Legal',
-   tags:['pre-birth-order'],
+   tags:['pre-birth-order','gca-signed'],
    title:`What to know about your Gestational Carrier Agreement`,
    body:`Your GCA is the legal contract that governs the relationship between you and your GC — covering everything from compensation and expenses to decision-making during pregnancy to what happens in various medical scenarios. It should be drafted by an attorney who specializes in reproductive law, and your GC should have independent legal representation. Key things to understand: the GCA is not the same as parental rights documentation (that's the PBO), it should explicitly address selective reduction and termination scenarios, and it should align with the laws of the state where your GC resides. Read it fully. Ask questions.`},
   {id:'a-009',phase:'preparing',weekRange:null,track:'Bonding',
@@ -4256,7 +4354,256 @@ const LIBRARY_CARDS = [
    title:`When the baby is here and the loss is still with you`,
    body:`The baby has arrived. You are holding them. Everything you worked toward is real. And sometimes — without warning, without apparent reason — the grief of the journey surfaces alongside the joy of where you've ended up. Research on new parenthood after fertility treatment consistently documents this experience: the arrival of the baby does not simply replace what was lost or resolve the emotional complexity of what the path cost. For intended parents who experienced prior losses, the newborn phase can carry an unexpected emotional resonance — moments of profound joy interrupted by unexpected tears, or a quiet sadness alongside the celebration that is confusing precisely because everything has finally worked out. Clinical psychologists describe this as the grief completing itself in a context of safety. The protective emotional armor built to survive the uncertainty is no longer needed, and in some parents, its dismantling releases what was held inside it. This is not pathological. It does not mean you're not grateful, or not bonded, or not happy. It means the journey was real, and you are human, and both things can be true at once.`},
 ];
+const SOURCE_MAP = {
+  'a-001':{sourceType:'Research consensus',sourceLabel:'Fertility & surrogacy psychology literature',sourceUrl:''},
+  'a-002':{sourceType:'Medical definition',sourceLabel:'ASRM / clinical standards',sourceUrl:'https://www.asrm.org'},
+  'a-003':{sourceType:'Legal / state law',sourceLabel:'Surrogacy law by state resources; Growing Generations',sourceUrl:'https://www.growinggenerations.com/blog/pre-birth-orders-surrogacy'},
+  'a-004':{sourceType:'Clinical psychology',sourceLabel:'Fertility psychology / anticipatory grief literature',sourceUrl:''},
+  'a-005':{sourceType:'Clinical standard',sourceLabel:'ASRM; fertility clinic protocols',sourceUrl:'https://www.asrm.org'},
+  'a-006':{sourceType:'Clinical guidance',sourceLabel:'RESOLVE; fertility support networks',sourceUrl:'https://resolve.org'},
+  'a-007':{sourceType:'Clinical standard',sourceLabel:'Fertility clinic / IVF protocol standards',sourceUrl:''},
+  'a-008':{sourceType:'Legal / surrogacy practice',sourceLabel:'Reproductive law attorneys; AAAA surrogacy guidelines',sourceUrl:''},
+  'a-009':{sourceType:'Qualitative research',sourceLabel:'Narrative fatherhood research; prenatal attachment studies',sourceUrl:'https://www.tandfonline.com/doi/full/10.1080/02646838.2023.2252890'},
+  'a-010':{sourceType:'Practitioner guidance',sourceLabel:'Surrogacy counselor consensus; IP support communities',sourceUrl:''},
+  'a-011':{sourceType:'SART / CDC data',sourceLabel:'SART National Summary; CDC ART Surveillance 2024',sourceUrl:'https://www.sartcorsonline.com/rptcsr_publicmultyear.aspx'},
+  'a-012':{sourceType:'Surrogacy research',sourceLabel:'IP/GC relationship outcomes literature',sourceUrl:''},
+  'a-013':{sourceType:'Legal / HR guidance',sourceLabel:'DOL FMLA fact sheet 28Q; Tsong Law Group',sourceUrl:'https://www.dol.gov/agencies/whd/fact-sheets/28q-taking-leave-for-birth-placement-child'},
+  'a-014':{sourceType:'Cultural / naming research',sourceLabel:'Cross-cultural naming studies; developmental psychology',sourceUrl:''},
+  'a-015':{sourceType:'Insurance / legal',sourceLabel:'Health insurance enrollment law; surrogacy attorney guidance',sourceUrl:''},
+  'a-016':{sourceType:'Clinical research',sourceLabel:'Fertility counselor studies; IP grief research',sourceUrl:''},
+  'a-017':{sourceType:'Embryology standard',sourceLabel:'ASRM embryo grading guidelines; IVF lab standards',sourceUrl:'https://www.asrm.org'},
+  'a-018':{sourceType:'Surrogacy / legal',sourceLabel:'Surrogacy agency practice; escrow trust standards',sourceUrl:''},
+  'a-019':{sourceType:'Practitioner / training data',sourceLabel:'Fertility book reviews; IP reading list consensus',sourceUrl:''},
+  'a-020':{sourceType:'Peer-reviewed research',sourceLabel:'Cong et al. 2015; Vittner et al. 2018; Feldman et al. 2012 — PubMed',sourceUrl:'https://pubmed.ncbi.nlm.nih.gov/25988992/'},
+  'a-021':{sourceType:'Financial / legal guidance',sourceLabel:'Estate planning standard practice; bar association guidance',sourceUrl:''},
+  'a-022':{sourceType:'Clinical psychology',sourceLabel:'Surrogacy grief counseling literature; IP therapy research',sourceUrl:''},
+  'a-023':{sourceType:'GC interviews / practitioner',sourceLabel:'Gestational carrier surveys; agency coordinator guidance',sourceUrl:''},
+  'a-024':{sourceType:'Sleep research',sourceLabel:'Sleep Medicine Reviews; sleep extension studies',sourceUrl:''},
+  'a-025':{sourceType:'Clinical structure',sourceLabel:'Fertility clinic / OB practice standards; agency coordinator guidance',sourceUrl:''},
+  'a-026':{sourceType:'Surrogacy psychology',sourceLabel:'IP fatherhood research; Tandfonline 2023',sourceUrl:'https://www.tandfonline.com/doi/full/10.1080/02646838.2023.2252890'},
+  'a-027':{sourceType:'Practitioner guidance',sourceLabel:'Hospital patient relations; surrogacy agency protocols',sourceUrl:''},
+  'a-028':{sourceType:'Caregiver research',sourceLabel:'Mental load / cognitive load research; IP wellbeing studies',sourceUrl:''},
+  'a-029':{sourceType:'Agency / practitioner',sourceLabel:'Surrogacy agency protocols; GCA standard terms',sourceUrl:''},
+  'a-030':{sourceType:'Financial / tax law',sourceLabel:'IRS 529 guidance; financial planning consensus',sourceUrl:'https://www.irs.gov/taxtopics/tc313'},
+  'a-031':{sourceType:'Prenatal development research',sourceLabel:'Fetal auditory research; DeCasper & Fifer 1980; later replications',sourceUrl:''},
+  'a-032':{sourceType:'Peer-reviewed / ASRM',sourceLabel:'ASRM PGT-A committee opinion; embryology literature',sourceUrl:'https://www.asrm.org'},
+  'a-033':{sourceType:'Fertility psychology',sourceLabel:'Layered hope concept; fertility counseling literature',sourceUrl:''},
+  'a-034':{sourceType:'Practitioner guidance',sourceLabel:'Birth plan / hospital coordination guidance; agency protocols',sourceUrl:''},
+  'a-035':{sourceType:'Sleep research',sourceLabel:'Sleep Medicine Reviews; sleep banking / extension studies',sourceUrl:''},
+  'a-036':{sourceType:'GC interviews / agency guidance',sourceLabel:'GC experience surveys; agency coordinator best practices',sourceUrl:''},
+  'a-037':{sourceType:'Financial planning consensus',sourceLabel:'CFP standards; term life insurance actuarial data',sourceUrl:''},
+  'b-001':{sourceType:'Embryology / clinical',sourceLabel:'ASRM; IVF implantation biology standards',sourceUrl:'https://www.asrm.org'},
+  'b-002':{sourceType:'Clinical psychology',sourceLabel:'Fertility counseling literature; 2WW psychological research',sourceUrl:''},
+  'b-003':{sourceType:'GC experience / practitioner',sourceLabel:'GC surveys; surrogacy counselor guidance',sourceUrl:''},
+  'b-004':{sourceType:'Clinical / endocrinology',sourceLabel:'ASRM; beta hCG interpretation guidelines',sourceUrl:'https://www.asrm.org'},
+  'b-005':{sourceType:'IP psychology',sourceLabel:'Intended parent emotional response research',sourceUrl:''},
+  'b-006':{sourceType:'Clinical / OB-GYN',sourceLabel:'ACOG; early pregnancy ultrasound guidelines',sourceUrl:'https://www.acog.org'},
+  'b-007':{sourceType:'Clinical transition standard',sourceLabel:'RE-to-OB handoff; fertility clinic protocols',sourceUrl:''},
+  'b-008':{sourceType:'Prenatal development research',sourceLabel:'Fetal hearing development; DeCasper studies; prenatal voice learning',sourceUrl:''},
+  'b-009':{sourceType:'ACOG / clinical',sourceLabel:'ACOG first trimester screening guidelines; NIPT accuracy literature',sourceUrl:'https://www.acog.org'},
+  'b-010':{sourceType:'Fertility psychology',sourceLabel:'First trimester anxiety; IP isolation research',sourceUrl:''},
+  'b-011':{sourceType:'Legal / state law',sourceLabel:'Reproductive attorney practice; Growing Generations; Fertility & Surrogacy Legal Group',sourceUrl:'https://fertilityandsurrogacylegal.com/pre-and-post-birth-orders/'},
+  'b-012':{sourceType:'Surrogacy / OB practice',sourceLabel:'Surrogacy-experienced OB guidance; agency coordination standards',sourceUrl:''},
+  'b-013':{sourceType:'Peer-reviewed research',sourceLabel:'Grossman & Grossman attachment research; IFS paternal bonding review; PMC 2022',sourceUrl:'https://pmc.ncbi.nlm.nih.gov/articles/PMC8959913/'},
+  'b-014':{sourceType:'Clinical / OB-GYN',sourceLabel:'ACOG; miscarriage risk by gestational age data',sourceUrl:'https://www.acog.org'},
+  'b-015':{sourceType:'Paternal psychology',sourceLabel:'IP nursery preparation and bonding research',sourceUrl:''},
+  'b-016':{sourceType:'Clinical / OB-GYN',sourceLabel:'ACOG anatomy scan guidelines; SMFM recommendations',sourceUrl:'https://www.acog.org'},
+  'b-017':{sourceType:'Clinical / OB',sourceLabel:'OB second trimester care guidelines; IP experience surveys',sourceUrl:''},
+  'b-018':{sourceType:'Insurance / legal',sourceLabel:'Health insurance enrollment law; surrogacy insurance guidance',sourceUrl:''},
+  'b-019':{sourceType:'Prenatal development',sourceLabel:'Quickening / fetal movement research; IP experience surveys',sourceUrl:''},
+  'b-021':{sourceType:'ACOG / clinical',sourceLabel:'ACOG gestational diabetes screening guidelines; GD prevalence data',sourceUrl:'https://www.acog.org'},
+  'b-022':{sourceType:'Childcare industry',sourceLabel:'Infant childcare waitlist data; NAEYC guidance',sourceUrl:''},
+  'b-024':{sourceType:'Peer-reviewed / clinical',sourceLabel:'NIPT accuracy meta-analyses; SMFM; ACOG NIPT guidelines 2023',sourceUrl:'https://www.acog.org'},
+  'b-025':{sourceType:'Legal / reproductive law',sourceLabel:'Fertility & Surrogacy Legal Group; Growing Generations; state PBO timelines',sourceUrl:'https://fertilityandsurrogacylegal.com/pre-and-post-birth-orders/'},
+  'b-026':{sourceType:'GC experience / practitioner',sourceLabel:'GC interviews; surrogacy counselor guidance',sourceUrl:''},
+  'b-027':{sourceType:'Couples research',sourceLabel:'Surrogacy couples research; relationship stress / fertility literature',sourceUrl:''},
+  'b-028':{sourceType:'Hospital preparation / surrogacy',sourceLabel:'Surrogacy agency hospital preparation protocols; birth plan guidance',sourceUrl:''},
+  'b-029':{sourceType:'ACOG / clinical',sourceLabel:'ACOG third trimester monitoring guidelines; prenatal visit frequency standards',sourceUrl:'https://www.acog.org'},
+  'b-030':{sourceType:'Obstetric statistics',sourceLabel:'ACOG due date accuracy data; birth timing distribution studies',sourceUrl:'https://www.acog.org'},
+  't-001':{sourceType:'Clinical / OB-GYN',sourceLabel:'ACOG GBS screening guidelines; CDC prevention recommendations',sourceUrl:'https://www.acog.org'},
+  't-002':{sourceType:'Practitioner / surrogacy agency',sourceLabel:'Surrogacy birth plan standards; agency protocols',sourceUrl:''},
+  't-003':{sourceType:'AAP policy / clinical',sourceLabel:'AAP cord blood banking policy statement',sourceUrl:'https://www.aap.org'},
+  't-004':{sourceType:'Practitioner guidance',sourceLabel:'Surrogacy agency birth protocols; emergency planning guidance',sourceUrl:''},
+  't-005':{sourceType:'Peer-reviewed research',sourceLabel:'Moore et al. 2016; Feldman 2012; AAP skin-to-skin guidelines',sourceUrl:'https://www.aap.org'},
+  't-006':{sourceType:'ACOG / clinical',sourceLabel:'ACOG preeclampsia task force recommendations',sourceUrl:'https://www.acog.org'},
+  't-007':{sourceType:'Clinical / ACOG',sourceLabel:'ACOG C-section rates data; CDC birth statistics',sourceUrl:'https://www.acog.org'},
+  't-008':{sourceType:'Surrogacy practice',sourceLabel:'Surrogacy agency hospital protocols; IP experience surveys',sourceUrl:''},
+  'n-001':{sourceType:'Pediatric / developmental',sourceLabel:'AAP golden hour guidelines; WHO skin-to-skin recommendations',sourceUrl:'https://www.aap.org'},
+  'n-002':{sourceType:'Legal / reproductive law',sourceLabel:'PBO implementation protocols; hospital patient rights',sourceUrl:''},
+  'n-003':{sourceType:'AAP / clinical',sourceLabel:'AAP breastfeeding policy; donor milk bank guidelines',sourceUrl:'https://www.aap.org'},
+  'n-004':{sourceType:'AAP / epidemiology',sourceLabel:'AAP safe sleep guidelines 2022; SIDS prevention research',sourceUrl:'https://www.aap.org'},
+  'n-005':{sourceType:'Clinical / AAP',sourceLabel:'AAP newborn care guidelines; pediatric triage standards',sourceUrl:'https://www.aap.org'},
+  'n-006':{sourceType:'Pediatric / developmental',sourceLabel:'Harvey Karp; infant neurological development research; PMC',sourceUrl:''},
+  'n-007':{sourceType:'GC psychology / research',sourceLabel:'GC postpartum experience research; surrogacy counselor guidance',sourceUrl:''},
+  'a-038':{sourceType:'Developmental psychology / ethics',sourceLabel:'ASRM ethics committee opinion on disclosure; Mahlstedt et al. 2010; DI Network research',sourceUrl:'https://www.asrm.org'},
+  'a-039':{sourceType:'Peer-reviewed research',sourceLabel:'Ekberg et al. 2013 (Swedish paternity leave data); McKinsey 2021 parental leave report; Feldman 2012 caregiving neuroscience',sourceUrl:''},
+  'a-040':{sourceType:'Financial / industry data',sourceLabel:'RESOLVE surrogacy cost surveys; Growing Generations cost guide; SMBC cost data',sourceUrl:'https://resolve.org'},
+  'a-041':{sourceType:'Child advocacy / developmental psychology',sourceLabel:'Donor Sibling Registry research; ASRM ethics committee; donor-conceived adult surveys (Mahlstedt 2010)',sourceUrl:''},
+  'a-042':{sourceType:'Developmental psychology / neuroscience',sourceLabel:'Singley & Edwards 2015 (patrescence); Rutherford et al.; new father neuroimaging — Feldman 2012',sourceUrl:''},
+  'f-001':{sourceType:'Clinical / obstetric',sourceLabel:'ACOG nausea and vomiting in pregnancy guidelines; NVP prevalence data',sourceUrl:'https://www.acog.org'},
+  'f-002':{sourceType:'Clinical standard',sourceLabel:'ACOG Committee Opinion 693; NSGC expanded carrier screening guidelines; ASRM',sourceUrl:'https://www.acog.org'},
+  'f-003':{sourceType:'Clinical psychology / RCT',sourceLabel:'Frederiksen et al. 2015 (CBT for fertility anxiety); MBSR fertility studies; RESOLVE',sourceUrl:'https://resolve.org'},
+  'f-004':{sourceType:'IP psychology / neuroscience',sourceLabel:'IP prenatal bonding research; Cranley 1981 prenatal attachment scale; paternal neuroimaging studies',sourceUrl:''},
+  'f-005':{sourceType:'Pediatric / practice management',sourceLabel:'AAP prenatal consultation guidance; ACOG recommendation (confirm pediatrician by 28 weeks)',sourceUrl:'https://www.aap.org'},
+  'f-018':{sourceType:'IP psychology research',sourceLabel:'Imrie & Jadva 2014 (IP first-trimester experiences); Söderström-Anttila et al. 2016 long-term surrogacy study; ASRM IP experience surveys',sourceUrl:''},
+  'f-019':{sourceType:'Clinical / reproductive endocrinology',sourceLabel:'ASRM luteal phase support guidelines; Daya & Gunby 2004 Cochrane review on progesterone; ACOG ART supplement',sourceUrl:'https://www.asrm.org'},
+  'f-020':{sourceType:'Family systems / surrogacy disclosure research',sourceLabel:'Blake et al. 2010 (family disclosure in surrogacy); Golombok 2015 Modern Families; RESOLVE family communication guidance',sourceUrl:''},
+  'f-021':{sourceType:'IP prenatal bonding research',sourceLabel:'Mercer 2004 (becoming a mother — fatherhood parallel); Condon et al. 2013 paternal engagement; Habib & Lancaster 2006',sourceUrl:''},
+  'f-022':{sourceType:'IP psychology / identity research',sourceLabel:'Singley & Edwards 2015 (patrescence); Doucet 2009 fatherhood and visibility; Marsiglio & Cohan 2000 on paternal identity',sourceUrl:''},
+  'f-023':{sourceType:'Clinical / ACOG / ASRM',sourceLabel:'ACOG Practice Bulletin on ectopic pregnancy; ASRM blighted ovum guidelines; Farquhar 2005 Cochrane ectopic review',sourceUrl:'https://www.acog.org'},
+  'f-024':{sourceType:'IP psychosocial research',sourceLabel:'Imrie & Jadva 2014; Teman 2010 (birthing a mother); Yee et al. 2012 IP emotional experience review',sourceUrl:''},
+  'f-025':{sourceType:'Paternal health research',sourceLabel:'Garfield et al. 2014 (paternal health and fathering); Gettler et al. 2011 testosterone study; new father wellbeing meta-analysis',sourceUrl:''},
+  'f-026':{sourceType:'Therapeutic writing research / IP bonding',sourceLabel:'Pennebaker & Seagal 1999 expressive writing; Hjelmstedt et al. 2003 prenatal bonding in IVF fathers; narrative therapy literature',sourceUrl:''},
+  'f-027':{sourceType:'ART law / reproductive medicine',sourceLabel:'ASRM embryo disposition consent guidelines; Daar 2014 (law of ART); state-specific embryo ownership case law',sourceUrl:'https://www.asrm.org'},
+  'f-028':{sourceType:'Social comparison / fertility psychology',sourceLabel:'Festinger 1954 social comparison theory; Greil et al. 2010 fertility grief; Peterson et al. 2006 infertility and social comparison',sourceUrl:''},
+  'f-029':{sourceType:'Industry data / financial planning',sourceLabel:'RESOLVE surrogacy cost surveys; Growing Generations cost structure guide; ASRM escrow requirements',sourceUrl:'https://resolve.org'},
+  'f-030':{sourceType:'Clinical / obstetric',sourceLabel:'ACOG first prenatal visit guidelines; SMFM IP-inclusive care resources; standard prenatal intake protocols',sourceUrl:'https://www.acog.org'},
+  'f-031':{sourceType:'Paternal prenatal bonding research',sourceLabel:'Cranley 1981 prenatal attachment scale; Habib & Lancaster 2006; Condon & Corkindale 1997 fetal attachment; Kisilevsky et al. fetal auditory learning',sourceUrl:''},
+  'f-032':{sourceType:'Employment law / HR policy',sourceLabel:'FMLA text (29 CFR § 825); state paid leave program comparisons; Society for HR Management surrogacy leave guidance',sourceUrl:'https://www.dol.gov/agencies/whd/fmla'},
+  'f-033':{sourceType:'Sleep research / preventive health',sourceLabel:'Mindell et al. 2015 new parent sleep; Carmichael & Goodlin 2018 paternal sleep reserve; Gross et al. 2011 mindfulness and sleep',sourceUrl:''},
+  'f-034':{sourceType:'Clinical research',sourceLabel:'Brennan et al. 2007 couvade review; Bogren 1983; Clinton 1987; Masoni et al. 1994 hormonal couvade research',sourceUrl:''},
+  'f-035':{sourceType:'IP-GC relationship research',sourceLabel:'Jadva et al. 2003 (surrogacy: the experiences of surrogate mothers); Imrie & Jadva 2014; Golombok et al. 2004 one-year follow-up',sourceUrl:''},
+  'f-036':{sourceType:'Fatherhood identity research',sourceLabel:'Deave & Johnson 2008 (transition to fatherhood); Marsiglio et al. 2000 fatherhood identity; Habib & Lancaster 2006 IP identity shift',sourceUrl:''},
+  'f-037':{sourceType:'IP psychology / fertility trauma',sourceLabel:'Gameiro et al. 2012 fertility treatment emotional impact; Leiblum et al. 1998 IP pregnancy anxiety; Domar et al. resilience post-treatment',sourceUrl:''},
+  's-001':{sourceType:'Clinical / ACOG',sourceLabel:'ACOG fetal movement monitoring guidelines; Saastad et al. 2009 COUNT the Kicks RCT',sourceUrl:'https://www.acog.org'},
+  's-002':{sourceType:'Peer-reviewed / epidemiology',sourceLabel:'Paulson & Bazemore 2010 meta-analysis (JAMA); Cameron et al. 2016; Field et al. 2006',sourceUrl:'https://jamanetwork.com/journals/jama/fullarticle/185675'},
+  's-003':{sourceType:'Clinical / social science',sourceLabel:'Cochrane review on postpartum social support; Feldman-Stewart et al.; new parent outcomes research',sourceUrl:''},
+  's-004':{sourceType:'Couples research / longitudinal',sourceLabel:'Belsky & Kelly 1994 (transition to parenthood); Doss et al. 2009; relationship satisfaction meta-analyses',sourceUrl:''},
+  's-005':{sourceType:'Clinical / radiology',sourceLabel:'ACOG Practice Bulletin 175; SMFM soft markers guideline; echogenic focus evidence review',sourceUrl:'https://www.acog.org'},
+  't-009':{sourceType:'Clinical / ACOG',sourceLabel:'ACOG labor and delivery guidelines; 5-1-1 rule; true vs. prodromal labor criteria',sourceUrl:'https://www.acog.org'},
+  't-010':{sourceType:'Pediatric / clinical',sourceLabel:'AAP well-child visit schedule; JAMA parent-pediatrician relationship survey; pediatric practice standards',sourceUrl:'https://www.aap.org'},
+  't-011':{sourceType:'Clinical / AHA / AAP',sourceLabel:'American Heart Association infant CPR guidelines; AAP Pediatric First Aid; Hazinski et al.',sourceUrl:'https://www.heart.org'},
+  't-012':{sourceType:'IP psychology research',sourceLabel:'Tangren et al. perinatal anxiety; White et al. 2017 IP birth experience study; surrogacy agency surveys',sourceUrl:''},
+  't-013':{sourceType:'IP experience research',sourceLabel:'Jadva et al. 2012 (IP third-trimester experiences); nesting behavior research; Kisilevsky & Laplante 2009',sourceUrl:''},
+  'n-008':{sourceType:'AAP guidelines',sourceLabel:'AAP Tummy Time guidelines 2022; Dudek-Shriber & Zelazny 2007; plagiocephaly prevention literature',sourceUrl:'https://www.aap.org'},
+  'n-009':{sourceType:'Infant development research',sourceLabel:'Barr et al. 1987 (PURPLE crying curve); Gustafson & Green 1989 cry acoustics; Zeifman 2001 cry evolution',sourceUrl:''},
+  'n-010':{sourceType:'Pediatric research',sourceLabel:'Brazelton 1962 (original PURPLE description); Barr et al. 1992 fussiness curve; Karp 5 S model',sourceUrl:''},
+  'n-011':{sourceType:'Pediatric / developmental',sourceLabel:'AAP developmental milestone guidelines; Brazelton & Nugent neonatal assessment; Nelson Textbook of Pediatrics',sourceUrl:'https://www.aap.org'},
+  'n-012':{sourceType:'Peer-reviewed / epidemiology',sourceLabel:'Paulson & Bazemore 2010 (JAMA); Cameron et al. 2016; Schumacher et al. 2008 PPPD risk factors',sourceUrl:'https://jamanetwork.com/journals/jama/fullarticle/185675'},
+  'n-013':{sourceType:'Sleep research / pediatric',sourceLabel:'Mindell et al. 2010 (Sleep journal); Galland et al. 2012 meta-analysis; infant sleep architecture research',sourceUrl:''},
+  'n-014':{sourceType:'AAP / epidemiology',sourceLabel:'AAP RSV and newborn immunocompromise guidelines; infant infection risk data; Tdap recommendation evidence',sourceUrl:'https://www.aap.org'},
+  'n-015':{sourceType:'AAP / clinical',sourceLabel:'AAP neonatal jaundice clinical practice guideline; phototherapy threshold research; kernicterus prevention data',sourceUrl:'https://www.aap.org'},
+  'n-016':{sourceType:'Developmental psychology',sourceLabel:'Tronick et al. still face experiment 1978 (extensively replicated); Harvard Center on Developing Child; serve-and-return framework',sourceUrl:'https://developingchild.harvard.edu'},
+  'n-017':{sourceType:'Developmental psychology / neuroscience',sourceLabel:'Singley & Edwards 2015 (patrescence); Deave & Johnson 2008; new father neuroimaging — Feldman 2012',sourceUrl:''},
+  't-014':{sourceType:'IP psychology / perinatal research',sourceLabel:'Jadva et al. 2012 (IP third-trimester psychological experience); Imrie & Jadva 2014; Golombok et al. IP wellbeing research',sourceUrl:''},
+  't-015':{sourceType:'Prenatal development / IP bonding research',sourceLabel:'Kisilevsky et al. 2003 (fetal voice recognition); DeCasper & Fifer 1980 (newborn voice preference); Golombok et al. IP prenatal bonding',sourceUrl:''},
+  't-016':{sourceType:'New parent transition research',sourceLabel:'Trillingsgaard et al. 2014; Cowan & Cowan "When Partners Become Parents"; first-week home support planning literature',sourceUrl:''},
+  't-017':{sourceType:'GC experience research / IP–GC relationship',sourceLabel:'Jadva et al. 2012 (GC third-trimester experience); van den Akker 2007; Imrie & Jadva 2014 postpartum GC outcomes',sourceUrl:''},
+  't-018':{sourceType:'IP experience research / perinatal psychology',sourceLabel:'Imrie & Jadva 2014 (IP labor and delivery experience); Golombok et al. 2004; Collard & van den Akker 2016',sourceUrl:''},
+  't-019':{sourceType:'Attachment theory / IP bonding research',sourceLabel:'Golombok et al. 2004 (IP family functioning); Bowlby attachment theory; Imrie & Jadva 2014 (bonding at delivery)',sourceUrl:''},
+  't-020':{sourceType:'Reproductive law / IP legal preparation',sourceLabel:'RESOLVE surrogacy legal guidance; ART law review literature; state-specific PBO timeline research',sourceUrl:''},
+  't-021':{sourceType:'Sleep science / performance research',sourceLabel:'Van Dongen et al. 2003 (sleep banking); Harrison & Horne 2000; Dinges et al. cumulative sleep debt research',sourceUrl:''},
+  's-018':{sourceType:'IP psychology / perinatal experience research',sourceLabel:'Imrie & Jadva 2014 (IP second-trimester experience); Golombok 2004; Collard & van den Akker 2016 IP disconnection research',sourceUrl:''},
+  's-019':{sourceType:'IP psychology / fertility treatment sequelae',sourceLabel:'Gameiro et al. 2012; Leiblum et al. 1998; Boivin & Gameiro 2015 (IP ongoing anxiety)',sourceUrl:''},
+  's-020':{sourceType:'Relationship psychology / perinatal research',sourceLabel:'Cowan & Cowan "When Partners Become Parents" longitudinal research; Trillingsgaard et al. 2014; Figueiredo et al. 2008 asymmetric bonding timelines',sourceUrl:''},
+  's-021':{sourceType:'IP psychology / perinatal anxiety',sourceLabel:'Gameiro et al. 2012; Leiblum et al. 1998; Imrie & Jadva 2014; Boivin & Gameiro 2015',sourceUrl:''},
+  'f-038':{sourceType:'IP–GC relationship research',sourceLabel:'Jadva et al. 2003 & 2012 (IP–GC relationship quality); van den Akker 2007; Imrie & Jadva 2014 communication patterns',sourceUrl:''},
+  'f-039':{sourceType:'IP experience research / perinatal psychology',sourceLabel:'Imrie & Jadva 2014 (IP appointment participation); Collard & van den Akker 2016; IP involvement research',sourceUrl:''},
+  'f-040':{sourceType:'IP–GC relationship research / boundary clarity',sourceLabel:'Jadva et al. 2003; van den Akker 2007 (IP–GC proximity dynamics); Imrie & Jadva 2014',sourceUrl:''},
+  's-022':{sourceType:'IP–GC communication research',sourceLabel:'Jadva et al. 2012; van den Akker 2007; Imrie & Jadva 2014 IP–GC communication frequency and quality',sourceUrl:''},
+  's-023':{sourceType:'IP–GC relationship dynamics / proximity research',sourceLabel:'van den Akker 2007; Imrie & Jadva 2014; GC experience literature',sourceUrl:''},
+  's-024':{sourceType:'IP involvement research / telehealth in perinatal care',sourceLabel:'Imrie & Jadva 2014; Jadva et al. 2012; IP appointment involvement research; Golombok et al. IP bonding mechanisms',sourceUrl:''},
+  'a-043':{sourceType:'Fertility psychology / IP trauma research',sourceLabel:'Gameiro et al. 2012; Boivin & Gameiro 2015 fertility treatment emotional sequelae; Domar et al. 1993 grief and fertility',sourceUrl:''},
+  'f-041':{sourceType:'Fertility psychology / IP trauma',sourceLabel:'Gameiro et al. 2012; Leiblum et al. 1998; Domar et al. 1993; fertility treatment emotional impact meta-analysis — Luk & Loke 2015',sourceUrl:''},
+  'b-031':{sourceType:'Fertility psychology / IP experience research',sourceLabel:'Jadva et al. 2012; Gameiro et al. 2012; Collard & van den Akker 2016 IP third-trimester experience post-loss',sourceUrl:''},
+  'n-033':{sourceType:'Perinatal psychology / fertility loss sequelae',sourceLabel:'Gameiro et al. 2012; Johansson et al. 2010 (parenthood after fertility loss); Domar et al. resilience research; Boivin & Gameiro 2015',sourceUrl:''},
+};
 
+// CARDS NEEDING SOURCE URLS — research and add the URL above:
+//   a-001 — Fertility & surrogacy psychology literature
+//   a-004 — Fertility psychology / anticipatory grief literature
+//   a-007 — Fertility clinic / IVF protocol standards
+//   a-008 — Reproductive law attorneys; AAAA surrogacy guidelines
+//   a-010 — Surrogacy counselor consensus; IP support communities
+//   a-012 — IP/GC relationship outcomes literature
+//   a-014 — Cross-cultural naming studies; developmental psychology
+//   a-015 — Health insurance enrollment law; surrogacy attorney guidance
+//   a-016 — Fertility counselor studies; IP grief research
+//   a-018 — Surrogacy agency practice; escrow trust standards
+//   a-019 — Fertility book reviews; IP reading list consensus
+//   a-021 — Estate planning standard practice; bar association guidance
+//   a-022 — Surrogacy grief counseling literature; IP therapy research
+//   a-023 — Gestational carrier surveys; agency coordinator guidance
+//   a-024 — Sleep Medicine Reviews; sleep extension studies
+//   a-025 — Fertility clinic / OB practice standards; agency coordinator guidance
+//   a-027 — Hospital patient relations; surrogacy agency protocols
+//   a-028 — Mental load / cognitive load research; IP wellbeing studies
+//   a-029 — Surrogacy agency protocols; GCA standard terms
+//   a-031 — Fetal auditory research; DeCasper & Fifer 1980; later replications
+//   a-033 — Layered hope concept; fertility counseling literature
+//   a-034 — Birth plan / hospital coordination guidance; agency protocols
+//   a-035 — Sleep Medicine Reviews; sleep banking / extension studies
+//   a-036 — GC experience surveys; agency coordinator best practices
+//   a-037 — CFP standards; term life insurance actuarial data
+//   b-002 — Fertility counseling literature; 2WW psychological research
+//   b-003 — GC surveys; surrogacy counselor guidance
+//   b-005 — Intended parent emotional response research
+//   b-007 — RE-to-OB handoff; fertility clinic protocols
+//   b-008 — Fetal hearing development; DeCasper studies; prenatal voice learning
+//   b-010 — First trimester anxiety; IP isolation research
+//   b-012 — Surrogacy-experienced OB guidance; agency coordination standards
+//   b-015 — IP nursery preparation and bonding research
+//   b-017 — OB second trimester care guidelines; IP experience surveys
+//   b-018 — Health insurance enrollment law; surrogacy insurance guidance
+//   b-019 — Quickening / fetal movement research; IP experience surveys
+//   b-022 — Infant childcare waitlist data; NAEYC guidance
+//   b-026 — GC interviews; surrogacy counselor guidance
+//   b-027 — Surrogacy couples research; relationship stress / fertility literature
+//   b-028 — Surrogacy agency hospital preparation protocols; birth plan guidance
+//   t-002 — Surrogacy birth plan standards; agency protocols
+//   t-004 — Surrogacy agency birth protocols; emergency planning guidance
+//   t-008 — Surrogacy agency hospital protocols; IP experience surveys
+//   n-002 — PBO implementation protocols; hospital patient rights
+//   n-006 — Harvey Karp; infant neurological development research; PMC
+//   n-007 — GC postpartum experience research; surrogacy counselor guidance
+//   a-039 — Ekberg et al. 2013 (Swedish paternity leave data); McKinsey 2021 parental leave report; Feldman 2012 caregiving neuroscience
+//   a-041 — Donor Sibling Registry research; ASRM ethics committee; donor-conceived adult surveys (Mahlstedt 2010)
+//   a-042 — Singley & Edwards 2015 (patrescence); Rutherford et al.; new father neuroimaging — Feldman 2012
+//   f-004 — IP prenatal bonding research; Cranley 1981 prenatal attachment scale; paternal neuroimaging studies
+//   f-018 — Imrie & Jadva 2014 (IP first-trimester experiences); Söderström-Anttila et al. 2016 long-term surrogacy study; ASRM IP experience surveys
+//   f-020 — Blake et al. 2010 (family disclosure in surrogacy); Golombok 2015 Modern Families; RESOLVE family communication guidance
+//   f-021 — Mercer 2004 (becoming a mother — fatherhood parallel); Condon et al. 2013 paternal engagement; Habib & Lancaster 2006
+//   f-022 — Singley & Edwards 2015 (patrescence); Doucet 2009 fatherhood and visibility; Marsiglio & Cohan 2000 on paternal identity
+//   f-024 — Imrie & Jadva 2014; Teman 2010 (birthing a mother); Yee et al. 2012 IP emotional experience review
+//   f-025 — Garfield et al. 2014 (paternal health and fathering); Gettler et al. 2011 testosterone study; new father wellbeing meta-analysis
+//   f-026 — Pennebaker & Seagal 1999 expressive writing; Hjelmstedt et al. 2003 prenatal bonding in IVF fathers; narrative therapy literature
+//   f-028 — Festinger 1954 social comparison theory; Greil et al. 2010 fertility grief; Peterson et al. 2006 infertility and social comparison
+//   f-031 — Cranley 1981 prenatal attachment scale; Habib & Lancaster 2006; Condon & Corkindale 1997 fetal attachment; Kisilevsky et al. fetal auditory learning
+//   f-033 — Mindell et al. 2015 new parent sleep; Carmichael & Goodlin 2018 paternal sleep reserve; Gross et al. 2011 mindfulness and sleep
+//   f-034 — Brennan et al. 2007 couvade review; Bogren 1983; Clinton 1987; Masoni et al. 1994 hormonal couvade research
+//   f-035 — Jadva et al. 2003 (surrogacy: the experiences of surrogate mothers); Imrie & Jadva 2014; Golombok et al. 2004 one-year follow-up
+//   f-036 — Deave & Johnson 2008 (transition to fatherhood); Marsiglio et al. 2000 fatherhood identity; Habib & Lancaster 2006 IP identity shift
+//   f-037 — Gameiro et al. 2012 fertility treatment emotional impact; Leiblum et al. 1998 IP pregnancy anxiety; Domar et al. resilience post-treatment
+//   s-003 — Cochrane review on postpartum social support; Feldman-Stewart et al.; new parent outcomes research
+//   s-004 — Belsky & Kelly 1994 (transition to parenthood); Doss et al. 2009; relationship satisfaction meta-analyses
+//   t-012 — Tangren et al. perinatal anxiety; White et al. 2017 IP birth experience study; surrogacy agency surveys
+//   t-013 — Jadva et al. 2012 (IP third-trimester experiences); nesting behavior research; Kisilevsky & Laplante 2009
+//   n-009 — Barr et al. 1987 (PURPLE crying curve); Gustafson & Green 1989 cry acoustics; Zeifman 2001 cry evolution
+//   n-010 — Brazelton 1962 (original PURPLE description); Barr et al. 1992 fussiness curve; Karp 5 S model
+//   n-013 — Mindell et al. 2010 (Sleep journal); Galland et al. 2012 meta-analysis; infant sleep architecture research
+//   n-017 — Singley & Edwards 2015 (patrescence); Deave & Johnson 2008; new father neuroimaging — Feldman 2012
+//   t-014 — Jadva et al. 2012 (IP third-trimester psychological experience); Imrie & Jadva 2014; Golombok et al. IP wellbeing research
+//   t-015 — Kisilevsky et al. 2003 (fetal voice recognition); DeCasper & Fifer 1980 (newborn voice preference); Golombok et al. IP prenatal bonding
+//   t-016 — Trillingsgaard et al. 2014; Cowan & Cowan "When Partners Become Parents"; first-week home support planning literature
+//   t-017 — Jadva et al. 2012 (GC third-trimester experience); van den Akker 2007; Imrie & Jadva 2014 postpartum GC outcomes
+//   t-018 — Imrie & Jadva 2014 (IP labor and delivery experience); Golombok et al. 2004; Collard & van den Akker 2016
+//   t-019 — Golombok et al. 2004 (IP family functioning); Bowlby attachment theory; Imrie & Jadva 2014 (bonding at delivery)
+//   t-020 — RESOLVE surrogacy legal guidance; ART law review literature; state-specific PBO timeline research
+//   t-021 — Van Dongen et al. 2003 (sleep banking); Harrison & Horne 2000; Dinges et al. cumulative sleep debt research
+//   s-018 — Imrie & Jadva 2014 (IP second-trimester experience); Golombok 2004; Collard & van den Akker 2016 IP disconnection research
+//   s-019 — Gameiro et al. 2012; Leiblum et al. 1998; Boivin & Gameiro 2015 (IP ongoing anxiety)
+//   s-020 — Cowan & Cowan "When Partners Become Parents" longitudinal research; Trillingsgaard et al. 2014; Figueiredo et al. 2008 asymmetric bonding timelines
+//   s-021 — Gameiro et al. 2012; Leiblum et al. 1998; Imrie & Jadva 2014; Boivin & Gameiro 2015
+//   f-038 — Jadva et al. 2003 & 2012 (IP–GC relationship quality); van den Akker 2007; Imrie & Jadva 2014 communication patterns
+//   f-039 — Imrie & Jadva 2014 (IP appointment participation); Collard & van den Akker 2016; IP involvement research
+//   f-040 — Jadva et al. 2003; van den Akker 2007 (IP–GC proximity dynamics); Imrie & Jadva 2014
+//   s-022 — Jadva et al. 2012; van den Akker 2007; Imrie & Jadva 2014 IP–GC communication frequency and quality
+//   s-023 — van den Akker 2007; Imrie & Jadva 2014; GC experience literature
+//   s-024 — Imrie & Jadva 2014; Jadva et al. 2012; IP appointment involvement research; Golombok et al. IP bonding mechanisms
+//   a-043 — Gameiro et al. 2012; Boivin & Gameiro 2015 fertility treatment emotional sequelae; Domar et al. 1993 grief and fertility
+//   f-041 — Gameiro et al. 2012; Leiblum et al. 1998; Domar et al. 1993; fertility treatment emotional impact meta-analysis — Luk & Loke 2015
+//   b-031 — Jadva et al. 2012; Gameiro et al. 2012; Collard & van den Akker 2016 IP third-trimester experience post-loss
+//   n-033 — Gameiro et al. 2012; Johansson et al. 2010 (parenthood after fertility loss); Domar et al. resilience research; Boivin & Gameiro 2015
 let libViewingDateStr = null;
 let libBrowseMode = false;
 let libBrowseQuery = '';
@@ -4316,111 +4663,108 @@ const DAILY_QUESTIONS = [
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
   // ── MILESTONE CHECK-IN QUESTIONS (triggered by card tag) ──
+  {id:'q-008',phase:'preparing',weekRange:null,triggeredByTag:'gca-signed',
+   question:`Where are you with your Gestational Carrier Agreement?`,
+   options:[
+    {label:`Fully executed — all parties have signed`,stateUpdate:{addMilestone:'gca-signed'}},
+    {label:`In review — negotiating or waiting on signatures`,stateUpdate:{setMilestoneInProgress:'gca-signed'}},
+    {label:`Not started yet — haven't gotten there`,stateUpdate:{setMilestoneNotStarted:'gca-signed'}},
+    {label:`Skip`,stateUpdate:{skipQuestion:true}}
+  ]},
   {id:'q-010',phase:'first',weekRange:null,triggeredByTag:'doc-folder',
    question:`Where are you with organizing your journey documents?`,
    options:[
-    {label:`I have a proper folder set up — it's organized and accessible`,stateUpdate:{addMilestone:'doc-folder'}},
-    {label:`I've saved things but it's scattered across email and paper`,stateUpdate:{noOp:true}},
-    {label:`I know it's important but I haven't gotten to it yet`,stateUpdate:{noOp:true}},
-    {label:`We have an agency or attorney handling most of the paperwork`,stateUpdate:{addMilestone:'doc-folder'}},
+    {label:`Set up and organized — I know where everything is`,stateUpdate:{addMilestone:'doc-folder'}},
+    {label:`Started but it's scattered — email, paper, different places`,stateUpdate:{setMilestoneInProgress:'doc-folder'}},
+    {label:`Haven't gotten to it yet`,stateUpdate:{setMilestoneNotStarted:'doc-folder'}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
   {id:'q-011',phase:'first',weekRange:null,triggeredByTag:'announcements',
    question:`How has telling people been going?`,
    options:[
     {label:`We've told most people — family, close friends, it's out there`,stateUpdate:{addMilestone:'announcements'}},
-    {label:`We've told close family but we're being selective with others`,stateUpdate:{noOp:true}},
-    {label:`We're keeping it quiet for now — not many people know`,stateUpdate:{noOp:true}},
-    {label:`The surrogacy piece makes it complicated and I'm still figuring out how to talk about it`,stateUpdate:{noOp:true}},
+    {label:`Close family knows but we're still being selective with others`,stateUpdate:{setMilestoneInProgress:'announcements'}},
+    {label:`Keeping it very quiet — very few people know`,stateUpdate:{setMilestoneNotStarted:'announcements'}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
   {id:'q-012',phase:'first',weekRange:null,triggeredByTag:'insurance',
    question:`How sorted is the health insurance side of things?`,
    options:[
-    {label:`Confirmed — I know the baby will be covered from day one`,stateUpdate:{addMilestone:'insurance'}},
-    {label:`I've looked into it and have a plan but there are details to resolve`,stateUpdate:{noOp:true}},
-    {label:`I know I need to address this but haven't dug in yet`,stateUpdate:{noOp:true}},
-    {label:`Insurance is being handled by our agency or attorney`,stateUpdate:{addMilestone:'insurance'}},
+    {label:`Confirmed — the baby will be covered from day one`,stateUpdate:{addMilestone:'insurance'}},
+    {label:`I've looked into it but there are still details to resolve`,stateUpdate:{setMilestoneInProgress:'insurance'}},
+    {label:`I need to address this and haven't started yet`,stateUpdate:{setMilestoneNotStarted:'insurance'}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
   {id:'q-013',phase:'first',weekRange:null,triggeredByTag:'leave-paperwork',
    question:`Where are you on paternity leave?`,
    options:[
-    {label:`Filed or all set — I know exactly what I'm taking and when`,stateUpdate:{addMilestone:'leave-paperwork'}},
-    {label:`I've had the conversation with HR but haven't filed the paperwork yet`,stateUpdate:{noOp:true}},
-    {label:`I know what I'm entitled to but haven't started the process`,stateUpdate:{noOp:true}},
-    {label:`I'm self-employed or my situation makes this more complicated`,stateUpdate:{noOp:true}},
+    {label:`Filed or all set — I know what I'm taking and when`,stateUpdate:{addMilestone:'leave-paperwork'}},
+    {label:`Had the HR conversation but haven't filed the paperwork yet`,stateUpdate:{setMilestoneInProgress:'leave-paperwork'}},
+    {label:`Haven't started the process yet`,stateUpdate:{setMilestoneNotStarted:'leave-paperwork'}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
   {id:'q-014',phase:'second',weekRange:null,triggeredByTag:'pediatrician',
    question:`Where are you in the pediatrician search?`,
    options:[
-    {label:`We've chosen a pediatrician and done the prenatal consultation`,stateUpdate:{addMilestone:'pediatrician'}},
-    {label:`I've interviewed a couple of practices and I'm close to deciding`,stateUpdate:{noOp:true}},
-    {label:`It's on my list but I haven't started the search yet`,stateUpdate:{noOp:true}},
-    {label:`Our area has limited options so this feels more like a logistics problem than a search`,stateUpdate:{noOp:true}},
+    {label:`Chosen — we've done the prenatal consultation`,stateUpdate:{addMilestone:'pediatrician'}},
+    {label:`Interviewing practices — close to deciding`,stateUpdate:{setMilestoneInProgress:'pediatrician'}},
+    {label:`On the list — haven't started the search yet`,stateUpdate:{setMilestoneNotStarted:'pediatrician'}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
   {id:'q-015',phase:'second',weekRange:null,triggeredByTag:'daycare',
    question:`What's your childcare situation looking like?`,
    options:[
-    {label:`We have a plan — on waitlists, signed a contract, or have family help arranged`,stateUpdate:{addMilestone:'daycare'}},
-    {label:`We've researched options and have a strong candidate but nothing locked in`,stateUpdate:{noOp:true}},
-    {label:`We know we need to figure this out but haven't really started`,stateUpdate:{noOp:true}},
-    {label:`We're planning to use a nanny or family member and daycare isn't really the question`,stateUpdate:{addMilestone:'daycare'}},
+    {label:`Locked in — waitlists, contract signed, or family help arranged`,stateUpdate:{addMilestone:'daycare'}},
+    {label:`Researching options but nothing committed yet`,stateUpdate:{setMilestoneInProgress:'daycare'}},
+    {label:`Haven't really started thinking about it`,stateUpdate:{setMilestoneNotStarted:'daycare'}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
   {id:'q-016',phase:'second',weekRange:null,triggeredByTag:'cord-blood',
    question:`Have you worked through the cord blood banking question?`,
    options:[
-    {label:`Yes — we made a decision and I know what we're doing`,stateUpdate:{addMilestone:'cord-blood'}},
-    {label:`I've read about it but I'm still going back and forth`,stateUpdate:{noOp:true}},
-    {label:`I know it's a decision I need to make but haven't looked into it yet`,stateUpdate:{noOp:true}},
-    {label:`We talked to the OB and were advised it wasn't a priority for our situation`,stateUpdate:{addMilestone:'cord-blood'}},
+    {label:`Yes — we made a decision and know what we're doing`,stateUpdate:{addMilestone:'cord-blood'}},
+    {label:`I've read about it but haven't decided yet`,stateUpdate:{setMilestoneInProgress:'cord-blood'}},
+    {label:`I need to look into this — haven't started yet`,stateUpdate:{setMilestoneNotStarted:'cord-blood'}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
   {id:'q-017',phase:'third',weekRange:null,triggeredByTag:'hospital-tour',
    question:`Have you seen the hospital or birth center where your GC will deliver?`,
    options:[
-    {label:`Yes — we toured, I know the layout, and I understand what to expect as an IP`,stateUpdate:{addMilestone:'hospital-tour'}},
-    {label:`I've been to the hospital for an appointment but haven't done a formal tour`,stateUpdate:{noOp:true}},
-    {label:`I know where it is and have a plan to go, but haven't been yet`,stateUpdate:{noOp:true}},
-    {label:`I'm not sure I'll be welcome in the room and haven't sorted out the protocol yet`,stateUpdate:{noOp:true}},
+    {label:`Yes — toured, know the layout, understand the IP protocol`,stateUpdate:{addMilestone:'hospital-tour'}},
+    {label:`Been there for appointments but haven't done a formal tour yet`,stateUpdate:{setMilestoneInProgress:'hospital-tour'}},
+    {label:`I know where it is but haven't visited yet`,stateUpdate:{setMilestoneNotStarted:'hospital-tour'}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
   {id:'q-018',phase:'third',weekRange:null,triggeredByTag:'infant-cpr',
    question:`Have you done an infant CPR class?`,
    options:[
-    {label:`Done — I'm certified and I feel prepared`,stateUpdate:{addMilestone:'infant-cpr'}},
-    {label:`I've done it in the past for a previous child and I'm comfortable`,stateUpdate:{addMilestone:'infant-cpr'}},
-    {label:`It's booked or on my near-term schedule`,stateUpdate:{noOp:true}},
-    {label:`It's on my list but I haven't scheduled it yet`,stateUpdate:{noOp:true}},
+    {label:`Done — certified and prepared`,stateUpdate:{addMilestone:'infant-cpr'}},
+    {label:`It's booked or on my near-term schedule`,stateUpdate:{setMilestoneInProgress:'infant-cpr'}},
+    {label:`On the list but not scheduled yet`,stateUpdate:{setMilestoneNotStarted:'infant-cpr'}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
   {id:'q-019',phase:'third',weekRange:null,triggeredByTag:'car-seat',
    question:`What's the status on the car seat?`,
    options:[
-    {label:`Installed and inspected by a certified technician — checked off`,stateUpdate:{addMilestone:'car-seat'}},
-    {label:`Installed, but I haven't had a technician inspect it yet`,stateUpdate:{noOp:true}},
-    {label:`We've bought one but haven't installed it yet`,stateUpdate:{noOp:true}},
-    {label:`Still researching which model to get`,stateUpdate:{noOp:true}},
+    {label:`Installed and inspected by a certified technician`,stateUpdate:{addMilestone:'car-seat'}},
+    {label:`Bought but not installed yet`,stateUpdate:{setMilestoneInProgress:'car-seat'}},
+    {label:`Still researching or haven't bought one yet`,stateUpdate:{setMilestoneNotStarted:'car-seat'}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
   {id:'q-020',phase:'third',weekRange:null,triggeredByTag:'nursery',
    question:`How's the nursery coming along?`,
    options:[
-    {label:`It's done — set up, stocked, and ready`,stateUpdate:{addMilestone:'nursery'}},
-    {label:`The furniture is in and the basics are set, still working on details`,stateUpdate:{noOp:true}},
-    {label:`We've started but there's still a lot to do`,stateUpdate:{noOp:true}},
-    {label:`We're waiting until closer to the birth to set it up`,stateUpdate:{noOp:true}},
+    {label:`Done — set up, stocked, and ready`,stateUpdate:{addMilestone:'nursery'}},
+    {label:`Started — furniture in, still working on details`,stateUpdate:{setMilestoneInProgress:'nursery'}},
+    {label:`Haven't started setting it up yet`,stateUpdate:{setMilestoneNotStarted:'nursery'}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
   {id:'q-021',phase:'any',weekRange:null,triggeredByTag:'support-network',
    question:`How's your support network for the newborn phase coming along?`,
    options:[
     {label:`Sorted — meals, coverage, and help are all organized`,stateUpdate:{addMilestone:'support-network'}},
-    {label:`Working on it, but not locked in yet`,stateUpdate:{noOp:true}},
-    {label:`Haven't really started thinking about it`,stateUpdate:{noOp:true}},
+    {label:`Working on it — some pieces in place but not locked in`,stateUpdate:{setMilestoneInProgress:'support-network'}},
+    {label:`Haven't really started thinking about it`,stateUpdate:{setMilestoneNotStarted:'support-network'}},
     {label:`Skip`,stateUpdate:{skipQuestion:true}}
   ]},
 ];
@@ -4434,7 +4778,17 @@ function applyQuestionAnswer(qId, stateUpdate) {
     state.questionLog[qId] = {answered: todayStr(), update: stateUpdate};
     // Apply state changes
     if (stateUpdate.addMilestone) {
+      if (!state.milestoneStatus) state.milestoneStatus = {};
+      state.milestoneStatus[stateUpdate.addMilestone] = 'done';
       state.completedMilestones = [...(state.completedMilestones || []), stateUpdate.addMilestone];
+    }
+    if (stateUpdate.setMilestoneInProgress) {
+      if (!state.milestoneStatus) state.milestoneStatus = {};
+      state.milestoneStatus[stateUpdate.setMilestoneInProgress] = 'in-progress';
+    }
+    if (stateUpdate.setMilestoneNotStarted) {
+      if (!state.milestoneStatus) state.milestoneStatus = {};
+      state.milestoneStatus[stateUpdate.setMilestoneNotStarted] = 'not-started';
     }
     if (stateUpdate.setGcDistance) {
       state.settings.gcDistance = stateUpdate.setGcDistance;
@@ -4552,13 +4906,14 @@ function getPhasePool(phase) {
     if (f.length > 0) pool = f;
   }
 
-  // Completed milestones — suppress cards whose milestone tags are all done
-  const done = state.completedMilestones || [];
-  if (done.length) {
+  // Milestone suppression — only suppress when ALL milestone tags on card are 'done'
+  const milSt = state.milestoneStatus || {};
+  const hasMilSt = Object.keys(milSt).length > 0;
+  if (hasMilSt) {
     const f = pool.filter(c => {
       const milTags = (c.tags || []).filter(t => MILESTONE_TAGS.includes(t));
       if (!milTags.length) return true;
-      return !milTags.every(t => done.includes(t));
+      return !milTags.every(t => milSt[t] === 'done');
     });
     if (f.length > 0) pool = f;
   }
@@ -4829,6 +5184,47 @@ function renderHomeCard() {
     markBtn.textContent = alreadyRead ? 'Read today ✶' : 'Mark as read · +10 XP';
     markBtn.style.opacity = alreadyRead ? '.6' : '';
     markBtn.style.background = alreadyRead ? 'var(--sage-deep)' : '';
+  }
+  // Source attribution
+  const sourceEl = document.getElementById('home-card-source');
+  const continueEl = document.getElementById('home-card-continue');
+  const src = SOURCE_MAP[card.id];
+  if (sourceEl) {
+    if (src && src.sourceLabel) {
+      sourceEl.textContent = src.sourceType ? `${src.sourceType} · ${src.sourceLabel}` : src.sourceLabel;
+      sourceEl.style.display = '';
+    } else {
+      sourceEl.style.display = 'none';
+    }
+  }
+  if (continueEl) {
+    if (src && src.sourceLabel) {
+      const hasUrl = src.sourceUrl && src.sourceUrl.length > 0;
+      continueEl.className = `card-continue-reading${hasUrl ? '' : ' no-url'}`;
+      continueEl.innerHTML = hasUrl
+        ? `<span class="cr-icon">↗</span><div class="cr-text"><a href="${src.sourceUrl}" target="_blank" rel="noopener" class="cr-action">Continue reading</a><span class="cr-label">${src.sourceLabel}</span></div>`
+        : `<span class="cr-icon">↗</span><div class="cr-text"><span class="cr-action">Continue reading</span><span class="cr-label">${src.sourceLabel}</span></div>`;
+      continueEl.style.display = '';
+    } else {
+      continueEl.style.display = 'none';
+    }
+  }
+  // Milestone status badge
+  const badgeEl = document.getElementById('home-card-milestone-badge');
+  if (badgeEl) {
+    const ms = state.milestoneStatus || {};
+    const milTags = (card.tags || []).filter(t => MILESTONE_TAGS.includes(t) && ms[t]);
+    if (milTags.length > 0) {
+      const statusLabels = {'done':'Complete','in-progress':'In progress','not-started':'Not started yet'};
+      const tag = milTags[0];
+      const status = ms[tag];
+      const label = statusLabels[status] || status;
+      const tagDisplay = tag.replace(/-/g,' ').replace(/\w/g,c=>c.toUpperCase());
+      badgeEl.innerHTML = `<span class="card-milestone-badge"><span class="ms-dot ms-dot-${status}"></span><span class="ms-label-${status}">${tagDisplay} · ${label}</span></span>`;
+      badgeEl.style.display = '';
+    } else {
+      badgeEl.style.display = 'none';
+    }
   }
   renderNudge();
   renderLibHomeProgress();
@@ -5200,7 +5596,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.2'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.3'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -5345,7 +5741,10 @@ function openProductIdeas(catId){
       </button>
     </div>`;
   }).join('');
-  document.getElementById('ideas-content').innerHTML=html;
+  const _sm=cat.shoppingMatch;
+  const _shopBought=_sm?((state.shopping[_sm]||{}).bought||false):false;
+  const _shopFooter=_sm?`<div style="margin-top:16px;padding:12px 14px;border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;"><span style="color:var(--ink-muted);">${_shopBought?`<span style="color:var(--sage-deep);">\u2713 Marked bought in shopping list</span>`:'Not yet marked bought in shopping list'}</span><button onclick="toggleShoppingItem('${_sm}');openProductIdeas('${catId}')" style="padding:5px 12px;border-radius:var(--r-sm);border:1px solid var(--cream-deeper);background:${_shopBought?'var(--sage-soft)':'transparent'};color:${_shopBought?'var(--sage-deep)':'var(--ink)'};font-size:12px;cursor:pointer;font-family:inherit;">${_shopBought?'Unmark bought':'Mark bought'}</button></div>`:''
+;  document.getElementById('ideas-content').innerHTML=html+_shopFooter;
   document.getElementById('ideas-backdrop').classList.add('open');
   document.getElementById('ideas-modal').classList.add('open');
 }
@@ -5500,6 +5899,8 @@ function renderShopping(){
     }
     const tagHtml=(item.tags||[]).map(t=>`<span class="shop-item-tag${shopFilter===t?' hi':''}">${t}</span>`).join('');
     const linkHtml=item.link?`<a class="shop-item-link" href="${item.link}" target="_blank" rel="noopener">↗ View</a>`:'';
+    const _bc=!item.custom?getBudgetCatForShopItem(item.id):null;
+    const _bs=_bc?(state.budget[_bc.id]||{}):{};
     return`<div class="shop-item${isBought?' bought':''}">
       <div class="shop-item-check" onclick="toggleShoppingItem('${item.id}')">${isBought?'✓':''}</div>
       <div class="shop-item-icon">${emoji}</div>
@@ -5510,7 +5911,9 @@ function renderShopping(){
           <span class="shop-item-price">${escapeHtml(item.price||'')}</span>
           <span class="shop-item-cat">${escapeHtml(item.category)}</span>
           ${tagHtml}
+          ${_bc&&_bs.price!=null?`<span class="shop-item-tag" style="background:var(--sage-soft);color:var(--sage-deep);">budgeted ${fmtMoney(_bs.price)}</span>`:''}
           ${linkHtml}
+          ${_bc?`<button class="shop-item-link" onclick="event.stopPropagation();openProductIdeas('${_bc.id}')" style="background:none;border:none;padding:0;cursor:pointer;font:inherit;">↗ Product options</button>`:''}
         </div>
       </div>
       ${item.custom?`<div class="shop-item-remove" role="button" aria-label="Remove item" onclick="removeShoppingItem('${item.id}')"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></div>`:''}
