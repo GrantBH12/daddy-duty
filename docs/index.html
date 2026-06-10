@@ -1379,6 +1379,9 @@
   .today-footer-row1  { margin-bottom: 10px; }
   .today-days-num     { font-size: 24px; }
 }
+.settings-nav-row{display:flex;align-items:center;gap:10px;width:100%;background:var(--cream-deep);border:1px solid var(--rule);border-radius:var(--r-md);padding:12px 14px;cursor:pointer;font-size:14px;font-family:inherit;color:var(--ink);transition:background var(--dur-fast);}
+.settings-nav-row:hover{background:var(--cream-deeper);}
+.settings-nav-sub{flex:1;text-align:left;font-size:12px;color:var(--ink-muted);}
 </style>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'><circle cx='8' cy='8' r='6' stroke='%23c97156' stroke-width='2'/></svg>"/>
 <script>if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js")</script>
@@ -1437,12 +1440,13 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v5.5 · cloud sync</span>
+      <span class="brand-meta">v5.6 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
     <span class="xp" id="topbar-xp">★ 0 XP</span>
     <span class="sync-dot offline" id="sync-dot" title="Cloud sync status"></span>
+    <button class="gear-btn" onclick="go('mystuff')" title="Important Things" aria-label="Important Things"><svg class="icon md" aria-hidden="true"><use href="#dd-mod-mystuff"></use></svg></button>
     <button class="gear-btn" id="settingsBtn" onclick="openSettings()" title="Settings" aria-label="Settings"><svg class="icon md" aria-hidden="true"><use href="#dd-sliders"></use></svg></button>
     <button class="home-btn hidden" id="homeBtn" onclick="go('home')">← Home</button>
   </div>
@@ -1614,15 +1618,6 @@
           <span class="module-arrow">Open →</span>
         </div>
       </div>
-      <div class="module" data-mod="mystuff" onclick="go('mystuff')">
-        <div class="module-icon"><svg viewBox="0 0 24 24" width="22" height="22"><use href="#dd-mod-mystuff"></use></svg></div>
-        <h3>My Stuff</h3>
-        <p>Every link, contact, and document in one place. Attachable to any task. One shelf for all of it.</p>
-        <div class="module-footer">
-          <span class="module-progress" id="mystuff-progress"><strong>0</strong> items</span>
-          <span class="module-arrow">Open →</span>
-        </div>
-      </div>
     </div>
     <div class="footnote-final">Built for the ones who didn't get a <span>traditional</span> map to fatherhood.</div>
   </div>
@@ -1697,8 +1692,8 @@
     <div class="detail-header">
       <div class="module-icon" style="background:linear-gradient(135deg,var(--sage) 0%,var(--terracotta) 100%);color:var(--cream);"><svg viewBox="0 0 24 24" width="26" height="26"><use href="#dd-mod-mystuff"></use></svg></div>
       <div class="detail-header-text">
-        <h1>My <em>Stuff</em></h1>
-        <p>Your shelf. Every link, contact, and document in one place. Add them here or attach them to any task. Edits propagate everywhere they're referenced.</p>
+        <h1>Important <em>Things</em></h1>
+        <p>Your key resources — links, contacts, and documents. Add them here or attach them to any task.</p>
       </div>
     </div>
     <div class="mystuff-tabs">
@@ -1817,7 +1812,7 @@
     <span id="picker-create-icon" style="width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.2);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">+</span>
     <span id="picker-create-label">Create a new link and attach it</span>
   </button>
-  <div class="picker-divider" id="picker-divider-text">Or pick from My Stuff</div>
+  <div class="picker-divider" id="picker-divider-text">Or pick from Important Things</div>
   <div class="picker-list" id="picker-list"></div>
 </div>
 </main>
@@ -1852,6 +1847,16 @@
         <label class="settings-field-label">Baby nickname <span class="settings-hint">(optional, pre-birth)</span></label>
         <input class="settings-input" type="text" id="s-baby" placeholder="e.g. Peanut" oninput="previewSettings()" />
       </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">Quick access</div>
+      <button class="settings-nav-row" onclick="closeSettings(); go('mystuff')">
+        <svg class="icon sm" aria-hidden="true"><use href="#dd-mod-mystuff"></use></svg>
+        <span>Important Things</span>
+        <span class="settings-nav-sub">Links, contacts &amp; documents</span>
+        <svg class="icon sm" aria-hidden="true"><use href="#dd-arrow-right"></use></svg>
+      </button>
     </div>
 
     <div class="settings-section" id="settings-journey-section">
@@ -2830,7 +2835,7 @@ function renderExpanded(t){
   return `<div class="task-expanded">
     <div class="task-expanded-section"><div class="task-expanded-label">Notes</div>
       <textarea class="task-notes" placeholder="Jot numbers, questions, anything…" oninput="editNotes('${t.id}',this.value)">${escapeHtml(t.notes||'')}</textarea></div>
-    <div class="task-expanded-section"><div class="task-expanded-label">My Stuff — attached to this task</div>
+    <div class="task-expanded-section"><div class="task-expanded-label">Important Things — attached to this task</div>
       ${renderAttachments(t)}
       <div class="add-attach-row">
         <div class="add-attach-btn" onclick="toggleAttachMenu(event,'${t.id}')"><span>+ Attach</span><span style="font-size:8px;">▾</span></div>
@@ -2869,7 +2874,7 @@ function escapeHtml(s){return(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function renderAttachments(t){const a=t.attachments||[];if(!a.length)return'<div style="font-size:12px;color:var(--ink-muted);font-style:italic;padding:4px 0;">Nothing attached yet.</div>';return`<ul class="attach-list">${a.map((r,i)=>renderAttachment(t.id,r,i)).join('')}</ul>`;}
 function renderAttachment(taskId,ref,i){
   const item=findItem(ref.type,ref.id);
-  if(!item)return`<li class="attach-row" style="opacity:.5;"><div class="attach-icon" style="background:var(--cream-deep);color:var(--ink-muted);">?</div><div class="attach-body"><div class="attach-primary" style="color:var(--ink-muted);font-style:italic;">Missing — removed from My Stuff</div></div><div class="attach-remove" role="button" aria-label="Remove attachment" style="opacity:1;" onclick="detachFromTask('${taskId}',${i})"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></div></li>`;
+  if(!item)return`<li class="attach-row" style="opacity:.5;"><div class="attach-icon" style="background:var(--cream-deep);color:var(--ink-muted);">?</div><div class="attach-body"><div class="attach-primary" style="color:var(--ink-muted);font-style:italic;">Missing — removed from Important Things</div></div><div class="attach-remove" role="button" aria-label="Remove attachment" style="opacity:1;" onclick="detachFromTask('${taskId}',${i})"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></div></li>`;
   if(ref.type==='link'||ref.type==='document'){const isDoc=ref.type==='document';const label=item.label||(isDoc?'Untitled document':'Untitled link');const url=item.url||'';const ph=isDoc?'paste document link…':'paste url…';const g=isDoc?'▤':'↗';return`<li class="attach-row ${ref.type}"><div class="attach-icon">${g}</div><div class="attach-body"><div class="attach-primary" contenteditable="true" onblur="editItem('${ref.type}','${ref.id}','label',this.innerText)">${escapeHtml(label)}</div><div class="attach-meta"><span class="field" style="flex-grow:1;"><span class="field-val ${url?'':'empty'}" contenteditable="true" onblur="editItem('${ref.type}','${ref.id}','url',this.innerText)">${escapeHtml(url||ph)}</span></span>${url?`<a href="${escapeHtml(url)}" target="_blank" rel="noopener" style="margin-left:8px;color:var(--terracotta-deep);font-weight:500;">Open ↗</a>`:''}</div></div><div class="attach-remove" onclick="detachFromTask('${taskId}',${i})" title="Remove from task"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></div></li>`;}
   if(ref.type==='contact'){const name=item.name||'Untitled';const hp=!!item.phone,he=!!item.email;return`<li class="attach-row contact"><div class="attach-icon">◉</div><div class="attach-body"><div class="attach-primary" contenteditable="true" onblur="editItem('contact','${ref.id}','name',this.innerText)">${escapeHtml(name)}</div><div class="attach-meta"><span class="field"><span class="field-label">Role</span><span class="field-val ${item.role?'':'empty'}" contenteditable="true" onblur="editItem('contact','${ref.id}','role',this.innerText)">${escapeHtml(item.role||'—')}</span></span><span class="field"><span class="field-label">Phone</span>${hp?`<a href="tel:${escapeHtml(item.phone)}">${escapeHtml(item.phone)}</a>`:`<span class="field-val empty" contenteditable="true" onblur="editItem('contact','${ref.id}','phone',this.innerText)">—</span>`}</span><span class="field"><span class="field-label">Email</span>${he?`<a href="mailto:${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>`:`<span class="field-val empty" contenteditable="true" onblur="editItem('contact','${ref.id}','email',this.innerText)">—</span>`}</span></div></div><div class="attach-remove" role="button" aria-label="Remove attachment" onclick="detachFromTask('${taskId}',${i})"><svg class="icon" aria-hidden="true"><use href="#dd-close"></use></svg></div></li>`;}
   return'';
@@ -2925,9 +2930,9 @@ function openPicker(taskId,type){
   const task=findTask(taskId),used=new Set((task?.attachments||[]).filter(a=>a.type===type).map(a=>a.id));
   const all=state.myStuff[BUCKET[type]]||[],avail=all.filter(it=>!used.has(it.id));
   const listEl=document.getElementById('picker-list'),divEl=document.getElementById('picker-divider-text');
-  if(!all.length){divEl.style.display='none';listEl.innerHTML='<div class="picker-empty">Nothing in My Stuff yet. Create the first one above.</div>';}
-  else if(!avail.length){divEl.style.display='';divEl.innerText='Already attached to this task';listEl.innerHTML=`<div class="picker-empty">Every ${type} in My Stuff is already on this task.</div>`;}
-  else{divEl.style.display='';divEl.innerText=`Or pick from My Stuff (${avail.length})`;listEl.innerHTML=avail.map(it=>renderPickerOption(type,it)).join('');}
+  if(!all.length){divEl.style.display='none';listEl.innerHTML='<div class="picker-empty">Nothing in Important Things yet. Create the first one above.</div>';}
+  else if(!avail.length){divEl.style.display='';divEl.innerText='Already attached to this task';listEl.innerHTML=`<div class="picker-empty">Every ${type} in Important Things is already on this task.</div>`;}
+  else{divEl.style.display='';divEl.innerText=`Or pick from Important Things (${avail.length})`;listEl.innerHTML=avail.map(it=>renderPickerOption(type,it)).join('');}
   document.getElementById('picker-backdrop').classList.add('open');
   document.getElementById('picker-modal').classList.add('open');
 }
@@ -6144,7 +6149,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.5'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.6'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
