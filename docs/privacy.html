@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Daddy Duty — Privacy &amp; Terms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream:         #f5ede0;
+  --cream-deep:    #ece1cc;
+  --cream-deeper:  #e0d2b6;
+  --ink:           #2a2620;
+  --ink-soft:      #57524a;
+  --ink-muted:     #756d61;
+  --terra:         #c97156;
+  --terra-deep:    #a85a42;
+  --rule:          rgba(42,38,32,.12);
+  --font-display: "Fraunces", "Cormorant Garamond", Georgia, serif;
+  --font-body:    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono:    "IBM Plex Mono", "JetBrains Mono", "SF Mono", Menlo, monospace;
+  --fs-h4:        clamp(1.05rem, 1.6vw, 1.25rem);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.65;
+  min-height: 100vh;
+}
+
+nav {
+  border-bottom: 1px solid var(--rule);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.25rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.back-link {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+  text-decoration: none;
+  transition: color .15s;
+}
+
+.back-link:hover { color: var(--terra); }
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+h1 em { font-style: italic; }
+
+.page-subtitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+  margin-bottom: 48px;
+}
+
+.policy-section {
+  margin-bottom: 32px;
+}
+
+.policy-section + .policy-section {
+  border-top: 1px solid var(--rule);
+  padding-top: 32px;
+}
+
+.policy-section h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-h4);
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+
+.policy-section p,
+.policy-section ul {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.65;
+  margin-bottom: 10px;
+}
+
+.policy-section ul {
+  padding-left: 18px;
+}
+
+.policy-section li {
+  margin-bottom: 4px;
+}
+
+.policy-section strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.policy-section p.subhead {
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+footer {
+  border-top: 1px solid var(--rule);
+  margin-top: 48px;
+  padding-top: 24px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+  line-height: 1.8;
+}
+
+footer a {
+  color: var(--ink-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+footer a:hover { color: var(--terra); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="wordmark" href="./">Daddy Duty</a>
+  <a class="back-link" href="./">← Back to app</a>
+</nav>
+
+<main>
+  <h1>Privacy <em>&amp; Terms</em></h1>
+  <p class="page-subtitle">firstdad.app &middot; Last updated: June 2026</p>
+
+  <div class="policy-section">
+    <h2>Privacy Policy</h2>
+    <p class="subhead">What we collect</p>
+    <ul>
+      <li>Your email address — used only for sign-in via magic link. Never shared.</li>
+      <li>Information you enter: your name, baby nickname, partner name, GC name, due date, journal entries, tasks, budget, and shopping data.</li>
+      <li>Anonymous usage events (card track and phase read) via Plausible Analytics — cookieless, no personal data collected.</li>
+    </ul>
+    <p class="subhead">How it's stored</p>
+    <p>Your data is stored in your browser's localStorage and in Supabase (encrypted at rest). Row Level Security ensures only your authenticated session can read or modify your data. No one else can access it.</p>
+    <p class="subhead">What we do — and don't do — with your data</p>
+    <ul>
+      <li>We do not sell, share, or use your data for advertising.</li>
+      <li>We do not read your journal or personal entries.</li>
+      <li>Your data is yours. Export it any time from Settings → Backup &amp; restore.</li>
+    </ul>
+    <p class="subhead">Deleting your data</p>
+    <p>Use Settings → Danger zone → "Delete my account &amp; all data" to permanently remove your cloud data and sign out. Or email <strong>granthansell@gmail.com</strong>.</p>
+    <p class="subhead">Analytics</p>
+    <p>Plausible Analytics logs which cards you read (track and phase only — no personal identifiers). No cookies. No cross-site tracking.</p>
+  </div>
+
+  <div class="policy-section">
+    <h2>Terms of Use</h2>
+    <ul>
+      <li><strong>Not medical advice.</strong> Content is for general informational purposes only. Always consult licensed medical, legal, and financial professionals for decisions affecting your health, family, or finances.</li>
+      <li><strong>Private &amp; invite-only.</strong> This app is currently for personally invited users only. Sharing access is not permitted without permission.</li>
+      <li><strong>No warranties.</strong> The app is provided as-is. We make no guarantees about accuracy, completeness, or availability.</li>
+      <li><strong>Your data.</strong> Everything you enter belongs to you. You can export or delete it at any time.</li>
+    </ul>
+  </div>
+
+  <div class="policy-section">
+    <h2>Affiliate Links</h2>
+    <ul>
+      <li><strong>What this means.</strong> Some product links in the Budget and Shopping modules are affiliate links. If you click a link and make a purchase, we may earn a small commission at no additional cost to you.</li>
+      <li><strong>Amazon.</strong> As an Amazon Associate, we earn from qualifying purchases.</li>
+      <li><strong>Our recommendations are independent.</strong> Affiliate relationships do not influence which products appear or how they are described. Recommendations reflect genuine research and editorial judgment.</li>
+      <li><strong>You can opt out.</strong> You are never required to use affiliate links. You can search for any recommended product directly.</li>
+    </ul>
+  </div>
+
+  <footer>
+    <p>Last updated: June 2026</p>
+    <p>Questions? <a href="mailto:granthansell@gmail.com">granthansell@gmail.com</a></p>
+    <p style="margin-top:8px;"><a href="./">← Daddy Duty</a></p>
+  </footer>
+</main>
+
+</body>
+</html>
