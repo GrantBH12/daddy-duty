@@ -1111,7 +1111,7 @@
 ───────────────────────────────────────────────────────── */
 
 .today-card {
-  max-width: 720px;
+  max-width: 860px;
   margin: 0 auto 40px;
   background: var(--ink);
   border-radius: var(--r-xl);
@@ -1437,7 +1437,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v5.4 · cloud sync</span>
+      <span class="brand-meta">v5.5 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -5571,9 +5571,9 @@ function renderHomeCard() {
 ────────────────────────────────────────────────────────── */
 
 const todayCardState = {
-  reading:  { expanded: true,  done: false },
-  journal:  { expanded: false, done: false },
-  question: { expanded: false, done: false },
+  reading:  { expanded: true,  done: false, visible: true },
+  journal:  { expanded: false, done: false, visible: true },
+  question: { expanded: false, done: false, visible: true },
 };
 
 function renderTodayCard() {
@@ -5651,12 +5651,15 @@ function renderTodayQuestion() {
   if (!q) {
     const item = document.getElementById('today-item-question');
     if (item) item.style.display = 'none';
+    todayCardState.question.visible = false;
+    updateTodayDoneBadge();
     return;
   }
   // Don't re-render if already answered (question is done)
   if (todayCardState.question.done) return;
   const item = document.getElementById('today-item-question');
   if (item) item.style.display = '';
+  todayCardState.question.visible = true;
   body.innerHTML =
     '<div class="today-item-label">Quick reflection</div>' +
     '<div class="today-item-sub">' + q.question + '</div>' +
@@ -5760,16 +5763,18 @@ function todaySelectAnswer(btn, qId, stateUpdate) {
 }
 
 function updateTodayDoneBadge() {
-  const count = Object.values(todayCardState).filter(function(s) { return s.done; }).length;
+  const visible = Object.values(todayCardState).filter(function(s) { return s.visible; });
+  const count   = visible.filter(function(s) { return s.done; }).length;
+  const total   = visible.length;
   const badge = document.getElementById('today-done-badge');
   const card  = document.getElementById('today-card');
   if (!badge) return;
-  if (count === 3) {
+  if (count === total) {
     badge.textContent = 'All done ✶';
     badge.classList.add('complete');
     if (card) card.classList.add('all-done');
   } else {
-    badge.textContent = count + ' / 3';
+    badge.textContent = count + ' / ' + total;
     badge.classList.remove('complete');
     if (card) card.classList.remove('all-done');
   }
@@ -6139,7 +6144,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.4'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.5'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
