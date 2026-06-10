@@ -1440,7 +1440,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v5.6 · cloud sync</span>
+      <span class="brand-meta">v5.7 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -2455,22 +2455,21 @@ function closePrivacy() {
   document.getElementById('privacy-modal').classList.remove('open');
 }
 
-async function deleteAccount() {
-  if (!confirm('This will permanently delete all your cloud data and sign you out. Local data on this device will also be cleared. This cannot be undone. Continue?')) return;
-  showToast('Deleting your data...');
-  const sb = getSB();
-  if (sb && _authUser) {
-    try {
-      await sb.from('user_app_data').delete().eq('user_id', _authUser.id);
-    } catch(e) { console.error('Delete data error:', e); }
-    try {
-      await sb.auth.signOut();
-    } catch(e) { console.error('Sign out error:', e); }
-  }
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem('firstdad.snapshots');
-  localStorage.removeItem(LEGACY_KEY_V22);
-  window.location.reload();
+function deleteAccount() {
+  let cancelled = false;
+  showToast('Account will be deleted — click Undo to cancel', () => { cancelled = true; });
+  setTimeout(async () => {
+    if (cancelled) return;
+    const sb = getSB();
+    if (sb && _authUser) {
+      try { await sb.from('user_app_data').delete().eq('user_id', _authUser.id); } catch(e) { console.error('Delete data error:', e); }
+      try { await sb.auth.signOut(); } catch(e) { console.error('Sign out error:', e); }
+    }
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('firstdad.snapshots');
+    localStorage.removeItem(LEGACY_KEY_V22);
+    window.location.reload();
+  }, 5000);
 }
 
 function renderAccountSection() {
@@ -6149,7 +6148,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.6'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.7'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
