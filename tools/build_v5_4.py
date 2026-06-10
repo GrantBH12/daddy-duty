@@ -448,7 +448,7 @@ TODAY_CSS = """
 }
 </style>"""
 
-src = src.replace(OLD4, TODAY_CSS + '\n<link rel="icon"', 1)
+src = src.replace(OLD4, '</style>' + TODAY_CSS + '\n<link rel="icon"', 1)
 print('  - CSS: today-card styles injected')
 
 # ── 5. JS: Wire renderTodayCard() into renderHomeCard() ────────────────────────
