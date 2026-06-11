@@ -1447,7 +1447,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v5.12 · cloud sync</span>
+      <span class="brand-meta">v5.13 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -5285,6 +5285,25 @@ function applyQuestionAnswer(qId, stateUpdate) {
   renderHomeCard(); // re-draw today's card if pool changed
 }
 
+function scoreQuestion(q, ctx) {
+  var score = 0;
+  var pendingSetupFields = ctx.pendingSetupFields;
+  var todayCardTags = ctx.todayCardTags;
+  // Setup questions with null state: top priority — each one unlocks a pool filter
+  var setupFieldMap = {
+    'q-001': 'gcDistance',
+    'q-002': 'isFirstTimeParent',
+    'q-003': 'priorLoss',
+    'q-005': 'isPartnered',
+    'q-006': 'birthAttendance',
+  };
+  var field = setupFieldMap[q.id];
+  if (field && pendingSetupFields[field]) score += 100;
+  // Triggered by today's card tag: thematically relevant
+  if (q.triggeredByTag && todayCardTags.includes(q.triggeredByTag)) score += 50;
+  return score;
+}
+
 function getNextQuestion() {
   const phase = getCurrentLibPhase();
   const log = state.questionLog || {};
@@ -5311,9 +5330,11 @@ function getNextQuestion() {
     return true;
   });
 
-  // Prioritize: triggered by today's card tag
-  const triggered = candidates.filter(q => q.triggeredByTag && lastCardTags.includes(q.triggeredByTag));
-  return triggered[0] || candidates[0] || null;
+  // Score candidates: setup questions with null state beat milestone check-ins;
+  // tag-triggered questions beat generic phase questions.
+  const qCtx = buildSurfaceContext();
+  const scored = candidates.slice().sort(function(a, b) { return scoreQuestion(b, qCtx) - scoreQuestion(a, qCtx); });
+  return scored[0] || null;
 }
 
 function renderDailyQuestion() {
@@ -5349,6 +5370,51 @@ function getGestationalWeek() {
   if (phase === 'preparing' || phase === 'newborn') return null;
   const dueMs = getDueDate() - new Date();
   return Math.round(40 - Math.ceil(dueMs / 86400000) / 7);
+}
+
+function buildSurfaceContext() {
+  var today = todayStr();
+  var todayCardId = state.dailyCardLog && state.dailyCardLog[today];
+  var todayCard = todayCardId ? LIBRARY_CARDS.find(function(c) { return c.id === todayCardId; }) : null;
+  var sortedLogDates = Object.keys(state.dailyCardLog || {}).sort();
+  // Last 7 calendar days (excluding today) — used for track diversity penalty
+  var recentTracks = sortedLogDates.slice(-8, -1).map(function(d) {
+    var c = LIBRARY_CARDS.find(function(x) { return x.id === state.dailyCardLog[d]; });
+    return c ? c.track : null;
+  }).filter(Boolean);
+  var settings = state.settings || {};
+  // Which setup fields are still null — each null field = personalization filters inactive
+  var pendingSetupFields = {
+    gcDistance:        settings.gcDistance        === null || settings.gcDistance        === undefined,
+    isFirstTimeParent: settings.isFirstTimeParent === null || settings.isFirstTimeParent === undefined,
+    priorLoss:         settings.priorLoss         === null || settings.priorLoss         === undefined,
+    isPartnered:       settings.isPartnered       === null || settings.isPartnered       === undefined,
+    birthAttendance:   settings.birthAttendance   === null || settings.birthAttendance   === undefined,
+  };
+  var phase = getCurrentLibPhase();
+  var week = getGestationalWeek();
+  var readIds = state.readCardIds || [];
+  var todayCardTags = (todayCard && todayCard.tags) || [];
+  var milSt = state.milestoneStatus || {};
+  // Milestone tags the user is actively working on — used for card affinity boost
+  var inProgressMilestoneTags = Object.entries(milSt)
+    .filter(function(e) { return e[1] === 'in-progress'; })
+    .map(function(e) { return e[0]; });
+  // Overdue task count — used for nudge priority
+  var currentPhase = getCurrentPhase();
+  var now = new Date();
+  var overdueCount = (state.tasks || []).filter(function(t) {
+    return t.phase === currentPhase && t.status !== 'done' && t.dueDate &&
+           Math.ceil((new Date(t.dueDate) - now) / 86400000) < 0;
+  }).length;
+  return {
+    today: today, phase: phase, week: week, readIds: readIds,
+    recentTracks: recentTracks, settings: settings,
+    pendingSetupFields: pendingSetupFields,
+    todayCard: todayCard, todayCardTags: todayCardTags,
+    inProgressMilestoneTags: inProgressMilestoneTags,
+    overdueCount: overdueCount
+  };
 }
 
 function getPhasePool(phase) {
@@ -5425,6 +5491,26 @@ function getPhasePool(phase) {
   return pool;
 }
 
+function scoreCard(card, ctx) {
+  var score = 0;
+  var week = ctx.week;
+  var readIds = ctx.readIds;
+  var recentTracks = ctx.recentTracks;
+  var inProgressMilestoneTags = ctx.inProgressMilestoneTags;
+  // Week-range match: strongest signal — card is timely right now
+  if (card.weekRange && week !== null &&
+      week >= card.weekRange[0] && week <= card.weekRange[1]) score += 100;
+  // Unread: always prefer unread over read cards
+  if (!readIds.includes(card.id)) score += 30;
+  // Track diversity penalty: scales naturally as library grows
+  var recentRepeat = recentTracks.filter(function(t) { return t === card.track; }).length;
+  score -= recentRepeat * 15;
+  // Milestone affinity: boost cards relevant to milestones user is actively working on
+  var cardMilTags = (card.tags || []).filter(function(t) { return MILESTONE_TAGS.includes(t); });
+  if (cardMilTags.some(function(t) { return inProgressMilestoneTags.includes(t); })) score += 25;
+  return score;
+}
+
 function drawCardForDate(dateStr) {
   if (!state.dailyCardLog) state.dailyCardLog = {};
   const logged = state.dailyCardLog[dateStr];
@@ -5443,11 +5529,8 @@ function drawCardForDate(dateStr) {
   }
   const unread = pool.filter(c => !readIds.includes(c.id));
   if (unread.length) {
-    const sortedDates = Object.keys(state.dailyCardLog).sort();
-    const prevDate = sortedDates.length >= 2 ? sortedDates[sortedDates.length - 2] : null;
-    const prevCard = prevDate ? LIBRARY_CARDS.find(c => c.id === state.dailyCardLog[prevDate]) : null;
-    const diverse = prevCard ? unread.filter(c => c.track !== prevCard.track) : unread;
-    const best = diverse.length ? diverse[0] : unread[0];
+    const ctx = buildSurfaceContext();
+    const best = unread.slice().sort(function(a, b) { return scoreCard(b, ctx) - scoreCard(a, ctx); })[0];
     state.dailyCardLog[dateStr] = best.id; save(); return best;
   }
   const seed = parseInt(dateStr.replace(/-/g,'').slice(-4), 10);
@@ -5615,7 +5698,18 @@ function renderLibBrowse() {
     return;
   }
   const readIds = state.readCardIds || [];
-  stage.innerHTML = `<div class="lib-browse-list">${pool.map(c => {
+  const browseCtx = buildSurfaceContext();
+  const sortedPool = pool.slice().sort(function(a, b) {
+    const aRead = readIds.includes(a.id);
+    const bRead = readIds.includes(b.id);
+    if (aRead !== bRead) return aRead ? 1 : -1; // unread cards first
+    if (!aRead && !bRead) return scoreCard(b, browseCtx) - scoreCard(a, browseCtx);
+    // Both read: most recently shown last (oldest reads sort higher, freshest lower)
+    const aDate = Object.keys(state.dailyCardLog || {}).find(function(d) { return state.dailyCardLog[d] === a.id; }) || '';
+    const bDate = Object.keys(state.dailyCardLog || {}).find(function(d) { return state.dailyCardLog[d] === b.id; }) || '';
+    return bDate.localeCompare(aDate);
+  });
+  stage.innerHTML = `<div class="lib-browse-list">${sortedPool.map(c => {
     const isRead = readIds.includes(c.id);
     return `<div class="lib-browse-row${isRead?' is-read':''}" onclick="libOpenCard('${c.id}')"><span class="lib-browse-track">${c.track}</span><span class="lib-browse-title">${escapeHtml(c.title)}</span>${isRead?'<span class="lib-browse-badge">\u2713</span>':''}</div>`;
   }).join('')}</div>`;
@@ -6007,6 +6101,26 @@ const JOURNAL_PROMPTS_SHORT = [
   `What are you most anxious about — and what are you most excited about?`,
 ];
 
+const JOURNAL_PROMPTS_BY_TRACK = {
+  'Surrogacy':     ['What do you want {{GC}} to know about how grateful you are right now?',
+                    'How has your relationship with {{GC}} evolved from where it started?',
+                    'What part of this surrogacy journey has surprised you most?'],
+  'Partnership':   ['What\'s one thing {{partner}} has done recently that you want to remember?',
+                    'Where are you and {{partner}} most aligned right now — and where are you diverging?'],
+  'Mental Health': ['What are you carrying right now that you haven\'t said out loud?',
+                    'What would you tell yourself six months ago about the anxiety you\'re feeling now?'],
+  'Fatherhood':    ['What kind of father do you want to be? Write one specific thing, not a value.',
+                    'What does becoming a dad mean to you this week?'],
+  'Practical':     ['What\'s the one prep task that keeps getting bumped — and why?',
+                    'What would be different if you did the hard thing on your list this week?'],
+  'Medical':       ['How are you processing the medical side of this right now?',
+                    'Write one sentence to your future self about this moment in the process.'],
+  'Legal':         ['What feels unresolved legally — and does it need action or does it need acceptance?',
+                    'Write down one thing about the legal side you want to understand better.'],
+  'Bonding':       ['Write one thing you already know about the kind of relationship you want with your kid.',
+                    'What does it feel like to be so close to meeting them?'],
+};
+
 function daysSinceLastJournal() {
   const entries = state.journal || [];
   if (!entries.length) return 999;
@@ -6033,11 +6147,28 @@ function renderNudge() {
     return;
   }
   if (journalGap >= 3) {
-    const prompt = JOURNAL_PROMPTS_SHORT[Math.floor(Date.now() / 86400000) % JOURNAL_PROMPTS_SHORT.length];
+    const nudgeCard = getTodayCard();
+    const trackKey = nudgeCard && nudgeCard.track;
+    const trackPrompts = trackKey && JOURNAL_PROMPTS_BY_TRACK[trackKey];
+    const rawPrompt = trackPrompts
+      ? trackPrompts[Math.floor(Date.now() / 86400000) % trackPrompts.length]
+      : JOURNAL_PROMPTS_SHORT[Math.floor(Date.now() / 86400000) % JOURNAL_PROMPTS_SHORT.length];
+    const prompt = resolveTokens(rawPrompt);
     const gapText = journalGap >= 999 ? (hasJournal ? `It's been a while` : `You haven't started yet`) : `${journalGap} days since your last entry`;
     wrap.innerHTML = `<div class="nudge" onclick="openJournalPrompt()">
       <div class="nudge-icon">✶</div>
       <div>${gapText}. Today's prompt: <em>${prompt}</em></div>
+      <div class="nudge-arrow">→</div>
+    </div>`;
+    return;
+  }
+  // Overdue task nudge: surfaces between journal nudge and settings nudge
+  const nCtx = buildSurfaceContext();
+  if (nCtx.overdueCount > 0) {
+    const plural = nCtx.overdueCount === 1 ? 'task is' : 'tasks are';
+    wrap.innerHTML = `<div class="nudge" onclick="go('tasks')">
+      <div class="nudge-icon">⚠</div>
+      <div>${nCtx.overdueCount} ${plural} overdue — worth a look today.</div>
       <div class="nudge-arrow">→</div>
     </div>`;
     return;
@@ -6362,7 +6493,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.12'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.13'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
