@@ -36,7 +36,7 @@ Pre-populated baby gear items organized into buying tiers (essential, recommende
 A packing checklist with four tabs: Dad, Partner, Baby, Documents. All items checkable. Pre-populated with a surrogacy-aware item set (e.g., pre-birth order in the documents tab).
 
 ### Module 05 — Knowledge Library
-The intellectual core of the app. A curated card library of research-backed parenting and surrogacy content, organized by pregnancy phase. One card surfaces per day on the home screen; you can browse the full library and navigate back through previous days. Reading a card earns XP and builds your streak. **191 cards as of v5.1; goal is 365 (one per day for a full year).**
+The intellectual core of the app. A curated card library of research-backed parenting and surrogacy content, organized by pregnancy phase. One card surfaces per day on the home screen; you can browse the full library and navigate back through previous days. Reading a card earns XP and builds your streak. **216 cards as of v5.8; goal is 365 (one per day for a full year).**
 
 ### Module 06 — Journal
 A private, in-app journal. Supports free writing and prompted entries. The app nudges you with prompts when you haven't written recently. Entries are timestamped and browseable.
@@ -133,7 +133,7 @@ More specifically:
 ### Version numbering
 - Major.minor versions (v2.x, v3.x, v4.x, v5.x) represent significant feature additions or redesigns
 - Patch versions (v3.9.1) represent bug fixes without new features
-- Current: **v5.1**
+- Current: **v5.8**
 
 ### The `.env` file
 Lives at `Daddy Duty/.env` and is gitignored (never committed). Contains:
@@ -166,16 +166,16 @@ Each card has:
 
 Surrogacy-track cards are hidden for non-surrogacy family paths; all other tracks show for all paths.
 
-### Current count (v5.1 — 191 cards)
+### Current count (v5.8 — 216 cards)
 
 | Phase | Current | Target | Gap |
 |-------|---------|--------|-----|
 | preparing | 43 | 60 | 17 |
-| first | 56 | 75 | 19 |
-| second | 36 | 65 | 29 |
-| third | 23 | 50 | 27 |
-| newborn | 33 | 75 | **42** |
-| **Total** | **191** | **365** | **174** |
+| first | 58 | 75 | 17 |
+| second | 41 | 65 | 24 |
+| third | 31 | 50 | 19 |
+| newborn | 43 | 75 | **32** |
+| **Total** | **216** | **365** | **149** |
 
 **The newborn phase is the biggest gap.** Cards here are the most valuable — you'll be in this phase when the baby arrives, and it's the least well-covered territory in existing parenting resources for fathers.
 
@@ -187,10 +187,10 @@ Surrogacy-track cards are hidden for non-surrogacy family paths; all other track
 
 ### Next IDs per phase
 - preparing: `a-044`, `a-045`...
-- first trimester: `f-042`, `f-043`...
-- second trimester: `s-025`, `s-026`...
-- third trimester: `t-022`, `t-023`...
-- newborn: `n-034`, `n-035`...
+- first trimester: `f-044`, `f-045`...
+- second trimester: `s-030`, `s-031`...
+- third trimester: `t-030`, `t-031`...
+- newborn: `n-044`, `n-045`...
 
 Always grep the live source to confirm the last ID before writing new ones.
 

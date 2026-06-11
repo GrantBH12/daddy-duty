@@ -408,18 +408,18 @@ All filters use a safety floor: if filtering would empty the pool, the filter is
 **Behavioral tags** — situation filters:
 `has-partner`, `remote-gc`, `same-state-gc`, `prior-loss`, `first-time-parent`, `anxiety-content`, `loss-adjacent`, `birth-attendance-ip`
 
-### Card counts (v5.1 — 191 total)
+### Card counts (v5.8 — 216 total)
 
 Always grep the live source for last IDs — don't trust this file's counts.
 
 | Phase | Count | ID series | Next ID |
 |-------|-------|-----------|---------|
 | preparing | 43 | a-001–a-043 | a-044 |
-| first | 56 | b-001–b-015, f-001–f-041 | f-042 |
-| second | 36 | b-016–b-029 (gaps at b-020, b-023), s-001–s-024 | s-025 |
-| third | 23 | t-001–t-021 (+b-030, b-031) | t-022 |
-| newborn | 33 | n-001–n-033 | n-034 |
-| **Total** | **191** | | |
+| first | 58 | b-001–b-015, f-001–f-043 | f-044 |
+| second | 41 | b-016–b-029 (gaps at b-020, b-023), s-001–s-029 | s-030 |
+| third | 31 | t-001–t-029 (+b-030, b-031) | t-030 |
+| newborn | 43 | n-001–n-043 | n-044 |
+| **Total** | **216** | | |
 
 ### 365-card goal
 
@@ -434,9 +434,9 @@ Target distribution (biggest gaps first):
 
 ### Daily questions (DAILY_QUESTIONS)
 
-18 questions. Two types:
+20 questions. Two types:
 - **Setup** (q-001–q-006, phase: preparing) — asked once to build user profile; answers set `gcDistance`, `isFirstTimeParent`, `priorLoss`, `mutedTracks`, `mutedSensitivity`, `isPartnered`, `birthAttendance`
-- **Milestone check-ins** (q-010–q-021) — triggered when today's card tag matches `triggeredByTag`; confirming adds to `completedMilestones`
+- **Milestone check-ins** (q-010–q-023) — triggered when today's card tag matches `triggeredByTag`; confirming adds to `completedMilestones`
 
 Selection in `getNextQuestion()`: phase-match + not answered + not skipped today → prioritize `triggeredByTag` matches → first candidate.
 
@@ -502,3 +502,5 @@ Streak pill was removed from the topbar in v4.2 — it lives inside the card's `
 - v5.4 — Unified Today Card: replaces three separate home blocks (todays-card, nudge, countdown-widget) with a single dark hero card; reading/journal/question presented as completable items; phase + countdown in card footer; streak row at card bottom
 - v5.5 — Today card 860px wide (was 720px); counter bug fixed: badge shows "X / 2" (not "1 / 3") when no daily question is available — visibility tracked in todayCardState
 - v5.6 — "My Stuff" demoted from module to "Important Things" profile utility: removed from 7-module grid (→ 6 modules); accessible via topbar folder icon and Settings → Quick access; all UI labels renamed; state key `myStuff` and all JS functions unchanged
+- v5.7 — Security fix: deleteAccount() window.confirm() replaced with undo-toast delayed-execution pattern (5s countdown, Undo cancels)
+- v5.8 — Card batch: 191 → 216 cards (+25); newborn/3rd-tri Emotional+Logistics+Surrogacy focus; 2 new daily questions (q-022 birth-plan, q-023 wills); journal prompts for birth-plan and hospital-tour milestones; 1 new SEED_TASK (paternity leave research)
