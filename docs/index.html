@@ -1194,6 +1194,7 @@
 .today-type-dot.terra { background: var(--terra);  box-shadow: 0 0 0 2.5px rgba(201,113,86,.22); }
 .today-type-dot.honey { background: var(--honey);  box-shadow: 0 0 0 2.5px rgba(232,181,71,.22); }
 .today-type-dot.sage  { background: var(--sage);   box-shadow: 0 0 0 2.5px rgba(122,139,107,.22); }
+.today-type-dot.sky   { background: var(--peach,#f2b28a); box-shadow: 0 0 0 2.5px rgba(242,178,138,.18); }
 .today-item-body  { min-width: 0; }
 .today-item-label {
   font-family: var(--font-display);
@@ -1446,7 +1447,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v5.11 · cloud sync</span>
+      <span class="brand-meta">v5.12 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1495,6 +1496,7 @@
             <div class="today-item-expand open" id="today-exp-reading">
               <div class="today-expand-inner">
                 <p class="today-preview-text" id="today-reading-preview"></p>
+                <div id="today-reading-source"></div>
                 <button class="today-item-cta primary" id="today-read-btn" onclick="event.stopPropagation(); go('library')">Read today →</button>
                 <button class="today-item-cta" style="margin-left:6px;" onclick="event.stopPropagation(); libBrowseMode=true; go('library')">Browse library</button>
               </div>
@@ -1539,6 +1541,19 @@
           <button class="today-check-circle" id="today-check-question"
             onclick="event.stopPropagation(); todayMarkDone('question')"
             aria-label="Mark question done">
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4.5L4 7.5L10 1.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Item 4: Recommended task -->
+        <div class="today-item" id="today-item-task" onclick="todayToggleExpand('task')" style="display:none">
+          <div class="today-type-dot sky"></div>
+          <div class="today-item-body" id="today-task-body"></div>
+          <button class="today-check-circle" id="today-check-task"
+            onclick="event.stopPropagation(); todayMarkDone('task')"
+            aria-label="Mark task done">
             <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
               <path d="M1 4.5L4 7.5L10 1.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -5427,7 +5442,14 @@ function drawCardForDate(dateStr) {
     if (wm.length) { state.dailyCardLog[dateStr] = wm[0].id; save(); return wm[0]; }
   }
   const unread = pool.filter(c => !readIds.includes(c.id));
-  if (unread.length) { state.dailyCardLog[dateStr] = unread[0].id; save(); return unread[0]; }
+  if (unread.length) {
+    const sortedDates = Object.keys(state.dailyCardLog).sort();
+    const prevDate = sortedDates.length >= 2 ? sortedDates[sortedDates.length - 2] : null;
+    const prevCard = prevDate ? LIBRARY_CARDS.find(c => c.id === state.dailyCardLog[prevDate]) : null;
+    const diverse = prevCard ? unread.filter(c => c.track !== prevCard.track) : unread;
+    const best = diverse.length ? diverse[0] : unread[0];
+    state.dailyCardLog[dateStr] = best.id; save(); return best;
+  }
   const seed = parseInt(dateStr.replace(/-/g,'').slice(-4), 10);
   const card = pool[seed % pool.length];
   state.dailyCardLog[dateStr] = card.id; save(); return card;
@@ -5704,6 +5726,7 @@ const todayCardState = {
   reading:  { expanded: true,  done: false, visible: true },
   journal:  { expanded: false, done: false, visible: true },
   question: { expanded: false, done: false, visible: true },
+  task:     { expanded: false, done: false, visible: false },
 };
 
 function renderTodayCard() {
@@ -5711,6 +5734,7 @@ function renderTodayCard() {
   renderTodayReading();
   renderTodayJournal();
   renderTodayQuestion();
+  renderTodayTask();
   renderTodayFooter();
   renderTodayStreak();
   updateTodayDoneBadge();
@@ -5737,6 +5761,27 @@ function renderTodayReading() {
     pills.innerHTML =
       '<span class="today-track-pill terra">' + (card.track || '') + '</span>' +
       (card.tags && card.tags.length ? '<span class="today-track-pill status">' + card.tags[0] + '</span>' : '');
+  }
+  // Source attribution
+  const sourceDiv = document.getElementById('today-reading-source');
+  if (sourceDiv) {
+    const cardSrc = SOURCE_MAP[card.id];
+    if (cardSrc && cardSrc.sourceLabel) {
+      let shtml = '<div class="card-source-line" style="margin-top:10px;">'
+        + (cardSrc.sourceType ? cardSrc.sourceType + ' · ' : '')
+        + cardSrc.sourceLabel + '</div>';
+      if (cardSrc.sourceUrl) {
+        shtml += '<div class="card-continue-reading" style="margin-top:8px;">'
+          + '<span class="cr-icon">↗</span><div class="cr-text">'
+          + '<a href="' + cardSrc.sourceUrl + '" target="_blank" rel="noopener" class="cr-action">Continue reading</a>'
+          + '<span class="cr-label">' + cardSrc.sourceLabel + '</span>'
+          + '</div></div>';
+      }
+      sourceDiv.innerHTML = shtml;
+      sourceDiv.style.display = '';
+    } else {
+      sourceDiv.style.display = 'none';
+    }
   }
   // Sync done state from app state
   const alreadyRead = (state.readCardIds || []).includes(card.id);
@@ -5800,6 +5845,49 @@ function renderTodayQuestion() {
         JSON.stringify(opt.stateUpdate).replace(/"/g, '&quot;') + ')">' + opt.label + '</button>';
     }).join('') +
     '</div></div></div>';
+}
+
+function renderTodayTask() {
+  const body = document.getElementById('today-task-body');
+  const item = document.getElementById('today-item-task');
+  if (!body || !item) return;
+  const phase = getCurrentPhase();
+  const undone = (state.tasks || []).filter(function(t) {
+    return t.phase === phase && t.status !== 'done';
+  });
+  const tw = state.thisWeek || new Set();
+  function taskUrgency(t) {
+    if (!t.dueDate) return null;
+    const days = Math.ceil((new Date(t.dueDate) - new Date()) / 86400000);
+    if (days < 0)  return 'overdue';
+    if (days <= 7) return 'soon';
+    return null;
+  }
+  const pick =
+    undone.find(function(t) { return tw.has(t.id) && taskUrgency(t) !== null; }) ||
+    undone.find(function(t) { return tw.has(t.id); }) ||
+    undone.find(function(t) { return taskUrgency(t) === 'overdue'; }) ||
+    undone.find(function(t) { return taskUrgency(t) === 'soon'; }) ||
+    undone.find(function(t) { return t.status === 'in-progress'; }) ||
+    undone[0];
+  if (!pick) {
+    item.style.display = 'none';
+    todayCardState.task.visible = false;
+    updateTodayDoneBadge();
+    return;
+  }
+  item.style.display = '';
+  todayCardState.task.visible = true;
+  const u = taskUrgency(pick);
+  const label = u === 'overdue' ? 'Overdue' : tw.has(pick.id) ? 'This week' : u === 'soon' ? 'Due soon' : 'Up next';
+  body.innerHTML =
+    '<div class="today-item-label">' + label + '</div>' +
+    '<div class="today-item-sub">' + resolveTokens(pick.title) + '</div>' +
+    '<div class="today-item-expand" id="today-exp-task"><div class="today-expand-inner">' +
+    '<span class="today-track-pill" style="margin-bottom:8px;">' + (pick.cat || '') + '</span>' +
+    '<button class="today-item-cta" onclick="event.stopPropagation(); go(\'tasks\')">Go to tasks →</button>' +
+    '</div></div>';
+  updateTodayDoneBadge();
 }
 
 function renderTodayFooter() {
@@ -6274,7 +6362,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.11'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.12'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
