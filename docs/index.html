@@ -1446,7 +1446,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v5.9 · cloud sync</span>
+      <span class="brand-meta">v5.10 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -1495,8 +1495,8 @@
             <div class="today-item-expand open" id="today-exp-reading">
               <div class="today-expand-inner">
                 <p class="today-preview-text" id="today-reading-preview"></p>
-                <button class="today-item-cta primary" id="today-read-btn" onclick="event.stopPropagation(); markCardRead()">Read today →</button>
-                <button class="today-item-cta" style="margin-left:6px;" onclick="event.stopPropagation(); go('library')">Full library</button>
+                <button class="today-item-cta primary" id="today-read-btn" onclick="event.stopPropagation(); go('library')">Read today →</button>
+                <button class="today-item-cta" style="margin-left:6px;" onclick="event.stopPropagation(); libBrowseMode=true; go('library')">Browse library</button>
               </div>
             </div>
           </div>
@@ -5723,7 +5723,7 @@ function renderTodayReading() {
   const pills   = document.getElementById('today-reading-pills');
   const preview = document.getElementById('today-reading-preview');
   if (label)   label.textContent   = card.title;
-  if (preview) preview.textContent = card.body ? card.body.slice(0, 220) + '…' : '';
+  if (preview) preview.textContent = card.body ? card.body.slice(0, 500) + '…' : '';
   if (pills) {
     pills.innerHTML =
       '<span class="today-track-pill terra">' + (card.track || '') + '</span>' +
@@ -6265,7 +6265,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.9'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.10'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
