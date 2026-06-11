@@ -1446,7 +1446,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v5.10 · cloud sync</span>
+      <span class="brand-meta">v5.11 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -5478,6 +5478,14 @@ function renderLibCard() {
   }
   const alreadyRead = (state.readCardIds || []).includes(card.id);
   const phaseLabels = {preparing:'Preparing',first:'First Trimester',second:'Second Trimester',third:'Third Trimester',newborn:'Newborn'};
+  const _cardSrc = SOURCE_MAP[card.id];
+  let _sourceHtml = '';
+  if (_cardSrc && _cardSrc.sourceLabel) {
+    _sourceHtml = '<div class="card-source-line">' + (_cardSrc.sourceType ? _cardSrc.sourceType + ' · ' : '') + _cardSrc.sourceLabel + '</div>';
+    if (_cardSrc.sourceUrl) {
+      _sourceHtml += '<div class="card-continue-reading"><span class="cr-icon">↗</span><div class="cr-text"><a href="' + _cardSrc.sourceUrl + '" target="_blank" rel="noopener" class="cr-action">Continue reading</a><span class="cr-label">' + _cardSrc.sourceLabel + '</span></div></div>';
+    }
+  }
   stage.innerHTML = `<div class="lib-card">
     <div class="lib-card-eyebrow">
       <span class="lib-card-track">${card.track}</span>
@@ -5487,6 +5495,7 @@ function renderLibCard() {
     <h2 class="lib-card-title">${card.title}</h2>
     <p class="lib-card-body">${card.body}</p>
     <p class="lib-card-disclaimer">For informational purposes only &mdash; not medical advice.</p>
+    ${_sourceHtml}
     <div class="lib-card-actions">
       ${isToday ? `<button class="lib-card-btn primary${alreadyRead?' done':''}" onclick="markLibCardRead('${card.id}')">${alreadyRead ? 'Read ✦' : 'Mark as read · +10 XP'}</button>` : ''}
       <button class="lib-card-btn ghost" onclick="reflectInJournal()">Reflect in journal</button>
@@ -6265,7 +6274,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.10'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.11'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
