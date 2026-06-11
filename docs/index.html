@@ -994,6 +994,12 @@
   .auth-tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--cream-deep,#ece4d3);border-radius:8px;padding:3px;}
   .auth-tab{flex:1;padding:7px 8px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink-muted);background:none;border:none;cursor:pointer;transition:all .15s;}
   .auth-tab.active{background:var(--cream,#f5ede0);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .auth-request-access{margin-top:20px;padding-top:18px;border-top:1px solid var(--cream-deeper,#e0d2b6);text-align:center;}
+  .auth-request-label{font-size:12px;font-weight:600;color:var(--ink);letter-spacing:.03em;margin-bottom:5px;}
+  .auth-request-sub{font-size:11px;color:var(--ink-muted,#756d61);line-height:1.55;margin-bottom:12px;}
+  .auth-request-link{font-size:12px;color:var(--terra,#c97156);font-weight:500;letter-spacing:.02em;text-decoration:none;}
+  .auth-request-link:hover{text-decoration:underline;}
+  .lib-card-disclaimer{font-size:11px;color:rgba(245,237,224,.4);margin-top:14px;font-style:italic;line-height:1.5;}
   /* ── Restore spinner ── */
   .auth-spinner{width:24px;height:24px;border:2px solid var(--ink-muted);border-top-color:var(--terracotta);border-radius:50%;animation:spin .8s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
@@ -1440,7 +1446,7 @@
     <div class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" fill="none" aria-label="Daddy Duty"><defs><mask id="dd-knot-mask"><rect width="140" height="100" fill="white"></rect><circle cx="55" cy="50" r="32" fill="none" stroke="black" stroke-width="8"></circle></mask></defs><circle cx="55" cy="50" r="32" stroke="#c97156" stroke-width="6"></circle><circle cx="92" cy="50" r="22" stroke="#5c6b4a" stroke-width="6" mask="url(#dd-knot-mask)"></circle><path d="M 114 50 A 22 22 0 0 1 92 72 A 22 22 0 0 1 70 50" stroke="#5c6b4a" stroke-width="6"></path></svg></div>
     <div>
       <span class="brand-name">Daddy Duty</span>
-      <span class="brand-meta">v5.8 · cloud sync</span>
+      <span class="brand-meta">v5.9 · cloud sync</span>
     </div>
   </div>
   <div class="status-pill">
@@ -2411,18 +2417,6 @@ async function obFamilyLinkAndNext(){
   const code=(input?.value||'').trim().toUpperCase();
   if(code.length===6)await linkToIp(code);
   onboardingNext();
-}
-
-function setAuthTab(tab){
-  document.getElementById('auth-panel-return').style.display=tab==='return'?'':'none';
-  document.getElementById('auth-panel-new').style.display=tab==='new'?'':'none';
-  document.getElementById('auth-tab-return').classList.toggle('active',tab==='return');
-  document.getElementById('auth-tab-new').classList.toggle('active',tab==='new');
-}
-
-async function sendMagicLinkNew(){
-  const email=(document.getElementById('auth-email-new')?.value||'').trim();
-  await _sendOtp(email,'auth-msg-new','auth-submit-new');
 }
 
 async function _sendOtp(email,msgId,btnId){
@@ -5492,6 +5486,7 @@ function renderLibCard() {
     </div>
     <h2 class="lib-card-title">${card.title}</h2>
     <p class="lib-card-body">${card.body}</p>
+    <p class="lib-card-disclaimer">For informational purposes only &mdash; not medical advice.</p>
     <div class="lib-card-actions">
       ${isToday ? `<button class="lib-card-btn primary${alreadyRead?' done':''}" onclick="markLibCardRead('${card.id}')">${alreadyRead ? 'Read ✦' : 'Mark as read · +10 XP'}</button>` : ''}
       <button class="lib-card-btn ghost" onclick="reflectInJournal()">Reflect in journal</button>
@@ -5603,7 +5598,7 @@ function libOpenCard(cardId) {
   stage.style.marginTop = '0';
   const alreadyRead = (state.readCardIds || []).includes(card.id);
   const phaseLabels = {preparing:'Preparing',first:'First Trimester',second:'Second Trimester',third:'Third Trimester',newborn:'Newborn'};
-  stage.innerHTML = `<button class="lib-browse-back" onclick="renderLibBrowse()">← Browse</button><div class="lib-card"><div class="lib-card-eyebrow"><span class="lib-card-track">${card.track}</span><span class="lib-card-phase">${phaseLabels[card.phase]||card.phase}</span></div><h2 class="lib-card-title">${card.title}</h2><p class="lib-card-body">${card.body}</p><div class="lib-card-actions"><button class="lib-card-btn primary${alreadyRead?' done':''}" onclick="markLibBrowseCardRead('${card.id}')">${alreadyRead?'Read \u2726':'Mark as read \u00b7 +10 XP'}</button><button class="lib-card-btn ghost" onclick="reflectInJournal()">Reflect in journal</button></div></div>`;
+  stage.innerHTML = `<button class="lib-browse-back" onclick="renderLibBrowse()">← Browse</button><div class="lib-card"><div class="lib-card-eyebrow"><span class="lib-card-track">${card.track}</span><span class="lib-card-phase">${phaseLabels[card.phase]||card.phase}</span></div><h2 class="lib-card-title">${card.title}</h2><p class="lib-card-body">${card.body}</p><p class="lib-card-disclaimer">For informational purposes only &mdash; not medical advice.</p><div class="lib-card-actions"><button class="lib-card-btn primary${alreadyRead?' done':''}" onclick="markLibBrowseCardRead('${card.id}')">${alreadyRead?'Read \u2726':'Mark as read \u00b7 +10 XP'}</button><button class="lib-card-btn ghost" onclick="reflectInJournal()">Reflect in journal</button></div></div>`;
 }
 
 function markLibBrowseCardRead(cardId) {
@@ -6270,7 +6265,7 @@ function applySettings(){
 
 /* BACKUP / RESTORE */
 function exportBackup(){
-  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.8'};
+  const snap={tasks:state.tasks,myStuff:state.myStuff,phaseCollapsed:Array.from(state.phaseCollapsed),thisWeek:Array.from(state.thisWeek),budget:state.budget,shopping:state.shopping,budgetCustomItems:state.budgetCustomItems,journal:state.journal||[],xp:state.xp||0,streak:state.streak||0,lastCheckinDate:state.lastCheckinDate||'',readCardIds:state.readCardIds||[],dailyCardLog:state.dailyCardLog||{},hospitalBag:state.hospitalBag||initHospitalBag(),settings:state.settings||{},exportedAt:new Date().toISOString(),appVersion:'v5.9'};
   const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -7021,10 +7016,6 @@ window.addEventListener('unhandledrejection',function(e){
   <div class="auth-card">
     <div class="auth-mark">&#9675;</div>
     <h2 class="auth-title">Daddy <em>Duty</em></h2>
-    <div class="auth-tabs">
-      <button class="auth-tab active" id="auth-tab-return" onclick="setAuthTab('return')">Already have an account</button>
-      <button class="auth-tab" id="auth-tab-new" onclick="setAuthTab('new')">New here</button>
-    </div>
     <div id="auth-panel-return">
       <p class="auth-sub">Enter the email you signed up with. We&#8217;ll send a link &#8212; your data will be waiting.</p>
       <input type="email" id="auth-email" class="auth-input" placeholder="your@email.com"
@@ -7032,12 +7023,10 @@ window.addEventListener('unhandledrejection',function(e){
       <button class="auth-btn" id="auth-submit-btn" onclick="sendMagicLink()">Send sign-in link &rarr;</button>
       <div class="auth-msg" id="auth-msg"></div>
     </div>
-    <div id="auth-panel-new" style="display:none;">
-      <p class="auth-sub">Create your account with an email. No password needed.</p>
-      <input type="email" id="auth-email-new" class="auth-input" placeholder="your@email.com"
-             onkeydown="if(event.key==='Enter')sendMagicLinkNew()" autocomplete="email" />
-      <button class="auth-btn" id="auth-submit-new" onclick="sendMagicLinkNew()">Create account &rarr;</button>
-      <div class="auth-msg" id="auth-msg-new"></div>
+    <div class="auth-request-access">
+      <p class="auth-request-label">New here?</p>
+      <p class="auth-request-sub">Daddy Duty is currently in private beta &#8212; access is by invitation only.</p>
+      <a class="auth-request-link" href="mailto:granthansell@gmail.com?subject=Daddy%20Duty%20access%20request">Request access &rarr;</a>
     </div>
     <div class="auth-fine">firstdad.app &middot; private &amp; secure</div>
     <div class="auth-links">
@@ -7080,7 +7069,7 @@ window.addEventListener('unhandledrejection',function(e){
       <h4>Terms of Use</h4>
       <ul>
         <li><strong>Not medical advice.</strong> Content is for general informational purposes only. Always consult licensed medical, legal, and financial professionals for decisions affecting your health, family, or finances.</li>
-        <li><strong>Private &amp; invite-only.</strong> This app is currently for personally invited users only. Sharing access is not permitted without permission.</li>
+        <li><strong>Private beta.</strong> Daddy Duty is currently in private beta. Access is by invitation only. To request access, email <strong>granthansell@gmail.com</strong>.</li>
         <li><strong>No warranties.</strong> The app is provided as-is. We make no guarantees about accuracy, completeness, or availability.</li>
         <li><strong>Your data.</strong> Everything you enter belongs to you. You can export or delete it at any time.</li>
       </ul>
